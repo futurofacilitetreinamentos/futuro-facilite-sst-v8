@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#075e45">
+<title>Futuro Facilite SST V8</title>
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/report.css">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="brand">
+      <img src="assets/logo.jpeg" alt="Futuro Facilite Treinamentos">
+      <div><strong>Futuro Facilite</strong><span>Gestão SST V8</span></div>
+    </div>
+    <nav id="menu">
+      <button data-view="dashboard" class="active">▦ Dashboard</button>
+      <button data-view="empresa">🏢 Empresa</button>
+      <button data-view="setores">▤ Setores</button>
+      <button data-view="funcoes">👷 Funções</button>
+      <button data-view="ghe">◉ GHE</button>
+      <button data-view="riscos">⚠ Inventário de riscos</button>
+      <button data-view="plano">✓ Plano de ação</button>
+      <button data-view="pgr">📄 PGR / NR-1</button>
+      <button data-view="pcmso">🩺 PCMSO</button>
+      <button data-view="ltcat">📋 LTCAT</button>
+      <button data-view="projetos">💾 Projetos salvos</button>
+    </nav>
+    <div class="side-foot">(61) 98515-0519<br>futurofacilitetreinamentos@gmail.com</div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div><h1 id="pageTitle">Dashboard</h1><p id="projectLabel">Novo projeto SST</p></div>
+      <div class="top-actions">
+        <button class="outline" id="newProjectBtn">Novo projeto</button>
+        <button class="primary" id="saveProjectBtn">Salvar projeto</button>
+      </div>
+    </header>
+
+    <section id="view-dashboard" class="view active">
+      <div class="hero">
+        <div><span class="eyebrow">GESTÃO INTEGRADA</span><h2>NR-1 / GRO + PGR</h2><p>Cadastre uma vez os dados da organização, ambientes, funções, GHEs e riscos. O sistema reutiliza essas informações no inventário, plano de ação e PGR.</p></div>
+        <div class="hero-badge">V8<br><span>Projeto independente</span></div>
+      </div>
+      <div class="cards metrics">
+        <article><b id="mSetores">0</b><span>Setores</span></article>
+        <article><b id="mFuncoes">0</b><span>Funções</span></article>
+        <article><b id="mGhe">0</b><span>GHEs</span></article>
+        <article><b id="mRiscos">0</b><span>Riscos</span></article>
+        <article><b id="mAltos">0</b><span>Altos/críticos</span></article>
+      </div>
+      <div class="cards two">
+        <article class="panel"><h3>Andamento do projeto</h3><div id="progressList"></div></article>
+        <article class="panel"><h3>Próximos módulos</h3><div class="roadmap"><span class="done">NR-1 / GRO</span><span class="done">PGR</span><span>PCMSO</span><span>LTCAT</span><span>eSocial SST</span></div></article>
+      </div>
+    </section>
+
+    <section id="view-empresa" class="view">
+      <div class="panel">
+        <div class="panel-head"><div><span class="eyebrow">CADASTRO CENTRAL</span><h2>Dados da organização</h2></div></div>
+        <div class="form-grid two">
+          <label>Razão social<input id="razaoSocial"></label>
+          <label>Nome fantasia<input id="nomeFantasia"></label>
+          <label>CNPJ<input id="cnpj" inputmode="numeric" maxlength="18" placeholder="00.000.000/0000-00"></label>
+          <label>CNAE principal<input id="cnae"></label>
+          <label>Grau de risco<input id="grauRisco" type="number" min="1" max="4"></label>
+          <label>Nº de trabalhadores<input id="numTrabalhadores" type="number" min="0"></label>
+          <label class="span2">Endereço<input id="endereco"></label>
+          <label>Responsável da empresa<input id="responsavelEmpresa"></label>
+          <label>Contato<input id="contatoEmpresa"></label>
+          <label>E-mail<input id="emailEmpresa" type="email"></label>
+          <label>Data de elaboração<input id="dataElaboracao" type="date"></label>
+          <label class="span2">Descrição das atividades<textarea id="atividadeEmpresa"></textarea></label>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div><span class="eyebrow">RESPONSÁVEIS</span><h2>Equipe técnica</h2></div></div>
+        <div class="form-grid two">
+          <label>Responsável SST<input id="respSst" value="Francson Menezes Alves"></label>
+          <label>Função / atribuição<input id="funcaoRespSst" value="Técnico de Segurança do Trabalho"></label>
+          <label>Médico do Trabalho<input id="medicoTrabalho"></label>
+          <label>CRM / RQE<input id="crmMedico"></label>
+          <label>Engenheiro de Segurança<input id="engSeguranca"></label>
+          <label>CREA<input id="creaEng"></label>
+        </div>
+      </div>
+    </section>
+
+    <section id="view-setores" class="view">
+      <div class="panel">
+        <div class="panel-head"><div><span class="eyebrow">AMBIENTES</span><h2>Setores / ambientes de trabalho</h2></div><button class="primary" id="addSetor">+ Setor</button></div>
+        <div id="setoresList"></div>
+      </div>
+    </section>
+
+    <section id="view-funcoes" class="view">
+      <div class="panel">
+        <div class="panel-head"><div><span class="eyebrow">FUNÇÕES</span><h2>Cargos, funções e atividades</h2></div><button class="primary" id="addFuncao">+ Função</button></div>
+        <div id="funcoesList"></div>
+      </div>
+    </section>
+
+    <section id="view-ghe" class="view">
+      <div class="panel">
+        <div class="panel-head"><div><span class="eyebrow">GRUPOS HOMOGÊNEOS</span><h2>GHE / grupos de exposição</h2></div><button class="primary" id="addGhe">+ GHE</button></div>
+        <div id="gheList"></div>
+      </div>
+    </section>
+
+    <section id="view-riscos" class="view">
+      <div class="panel">
+        <div class="panel-head"><div><span class="eyebrow">NR-1 / GRO</span><h2>Inventário de riscos ocupacionais</h2></div><button class="primary" id="addRisco">+ Risco</button></div>
+        <div class="notice">Classificação automática: Probabilidade (1–5) × Severidade (1–5). A matriz é um critério interno configurado no sistema e deve ser validado pela equipe responsável pelo GRO.</div>
+        <div id="riscosList"></div>
+      </div>
+    </section>
+
+    <section id="view-plano" class="view">
+      <div class="panel">
+        <div class="panel-head"><div><span class="eyebrow">CONTROLE</span><h2>Plano de ação</h2></div></div>
+        <div id="planoTable"></div>
+      </div>
+    </section>
+
+    <section id="view-pgr" class="view">
+      <div class="panel">
+        <div class="panel-head"><div><span class="eyebrow">DOCUMENTO</span><h2>PGR / NR-1</h2></div><div class="actions"><button class="outline" id="previewPgr">Prévia</button><button class="dark" id="printPgr">Gerar PDF</button></div></div>
+        <div class="notice">O PGR gerado por esta versão consolida cadastro da organização, critérios de avaliação, inventário de riscos e plano de ação. Revise tecnicamente antes da emissão definitiva.</div>
+        <div id="pgrSummary"></div>
+      </div>
+    </section>
+
+    <section id="view-pcmso" class="view">
+      <div class="module-coming">
+        <div class="big-icon">🩺</div><h2>PCMSO — módulo médico</h2>
+        <p>Estrutura já reservada para receber automaticamente os riscos classificados no PGR e disponibilizá-los ao Médico do Trabalho para elaboração, revisão e aprovação do PCMSO.</p>
+        <div class="coming-grid"><span>Riscos por função</span><span>Exames ocupacionais</span><span>Periodicidades</span><span>ASO</span><span>Relatório analítico</span><span>Aprovação médica</span></div>
+        <b>Próxima etapa da V8</b>
+      </div>
+    </section>
+
+    <section id="view-ltcat" class="view">
+      <div class="module-coming">
+        <div class="big-icon">📋</div><h2>LTCAT — módulo previdenciário</h2>
+        <p>Estrutura reservada para agentes nocivos, avaliações quantitativas, metodologia, EPC/EPI, exposição por GHE/função e conclusão técnica, com validação pelo profissional legalmente habilitado.</p>
+        <div class="coming-grid"><span>Agentes nocivos</span><span>Medições</span><span>Metodologia</span><span>EPC / EPI</span><span>Conclusão</span><span>Assinatura técnica</span></div>
+        <b>Próxima etapa da V8</b>
+      </div>
+    </section>
+
+    <section id="view-projetos" class="view">
+      <div class="panel">
+        <div class="panel-head"><div><span class="eyebrow">ARQUIVO</span><h2>Projetos salvos neste aparelho</h2></div></div>
+        <input id="searchProjects" placeholder="Pesquisar empresa...">
+        <div id="projectsList"></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div id="modal" class="modal-backdrop hidden"><div class="modal"><div class="modal-head"><h2 id="modalTitle">Cadastro</h2><button id="closeModal" class="danger">Fechar</button></div><div id="modalBody"></div></div></div>
+<div id="reportModal" class="modal-backdrop hidden"><div class="modal report-modal"><div class="modal-head"><h2>Prévia do PGR</h2><div><button id="printFromPreview" class="dark">Imprimir / PDF</button><button id="closeReport" class="danger">Fechar</button></div></div><div id="reportPreview" class="report-preview"></div></div></div>
+
+<script src="js/storage.js"></script>
+<script src="js/report.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

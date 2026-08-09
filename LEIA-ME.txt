@@ -1,0 +1,41 @@
+FUTURO FACILITE SST — V8
+PROJETO INDEPENDENTE DA V7
+
+OBJETIVO
+Sistema-base para cadastro central de empresas e gerenciamento integrado de SST.
+
+MÓDULOS FUNCIONAIS NESTA VERSÃO
+- Dashboard
+- Cadastro da organização
+- Setores / ambientes
+- Cargos e funções
+- GHE
+- Inventário de riscos
+- Matriz de risco 5x5
+- Plano de ação
+- Prévia e geração de PGR em PDF
+- Projetos salvos e editáveis no navegador
+
+MÓDULOS PREPARADOS PARA A PRÓXIMA ETAPA
+- PCMSO
+- LTCAT
+
+PUBLICAÇÃO
+Crie um NOVO repositório no GitHub, por exemplo:
+futuro-facilite-sst-v8
+
+Envie todo o conteúdo desta pasta mantendo:
+index.html
+css/
+js/
+assets/
+
+Depois ative GitHub Pages:
+Settings > Pages > Deploy from a branch > main > /(root)
+
+IMPORTANTE
+Esta versão salva os projetos no navegador por localStorage.
+Não substitua a V7: publique este projeto em outro repositório/endereço.
+
+BASE REGULATÓRIA DE ESTRUTURA
+A implementação foi estruturada para contemplar inventário de riscos e plano de ação no PGR, mantendo revisão técnica antes da emissão final.
