@@ -59,7 +59,9 @@ function collect(){
  empFields.forEach(f=>project.empresa[f]=$(f).value);
  project.agenda=Array.isArray(project.agenda)?project.agenda:[];
  project.salvoEm=new Date().toLocaleString('pt-BR');
- return JSON.parse(JSON.stringify(project));
+ const snap=JSON.parse(JSON.stringify(project));
+ snap.drps=DRPSData.bundle(V8Storage.drpsList(project.id));
+ return snap;
 }
 function apply(p,silent){
  project=JSON.parse(JSON.stringify(p));
@@ -167,7 +169,7 @@ function pushInspectionContext(){
 function openInspecao(){
  const f=$('inspecaoFrame');
  if(!f) return;
- const src=new URL('inspecao/index.html?v=8.6', document.baseURI).href;
+ const src=new URL('inspecao/index.html?v=8.7', document.baseURI).href;
  if(f.dataset.loaded!=='1'){
   f.onload=()=>pushInspectionContext();
   f.src=src;
@@ -230,7 +232,7 @@ function agendarInspecao(){
  if(!data) return alert('Informe a data da inspeção.');
  project.agenda=project.agenda||[];
  project.agenda.unshift({id:'ag_'+Date.now(), data, hora, tecnico, obs, status:'agendada'});
- V8Storage.save(collect());
+ V8Storage.save(project);
  $('agObs').value='';
  renderAgenda();
  renderDashboard();
@@ -240,14 +242,14 @@ function iniciarAgendada(id){
  const a=(project.agenda||[]).find(x=>x.id===id);
  if(!a) return;
  (project.agenda||[]).forEach(x=>x.useNext=x.id===id);
- V8Storage.save(collect());
+ V8Storage.save(project);
  go('inspecao');
 }
 function cancelarAgenda(id){
  if(!confirm('Cancelar este agendamento?')) return;
  const a=(project.agenda||[]).find(x=>x.id===id);
  if(a) a.status='cancelada';
- V8Storage.save(collect());
+ V8Storage.save(project);
  renderAgenda();
  renderDashboard();
 }
@@ -267,7 +269,7 @@ function renderLaudos(){
   },
   {
    title:'PGR / NR-1',
-   meta:st.cadastro?'Usa o cadastro do condomínio, setores, GHE e riscos':'Cadastre o condomínio e o inventário',
+   meta:st.cadastro?'Cadastro, inventário, plano de ação e resultado coletivo do DRPS':'Cadastre o condomínio e o inventário',
    ready:st.cadastro,
    actions: st.cadastro
     ? `<button class="outline" data-act="prev-pgr">Prévia</button><button class="dark" data-act="pdf-pgr">Gerar PDF</button>`
@@ -325,7 +327,11 @@ function renderFuncoes(){entityList($('funcoesList'),project.funcoes,'funcao',x=
 function renderGhe(){entityList($('gheList'),project.ghe,'ghe',x=>`${V8Report.esc(x.setor||'')} · ${V8Report.esc(x.funcoes||'')}`)}
 function renderRiscos(){const root=$('riscosList');root.innerHTML=project.riscos.length?'':'<div class="notice">Nenhum risco cadastrado.</div>';project.riscos.forEach((r,i)=>{const score=Number(r.prob)*Number(r.sev),lvl=V8Report.level(score),cl=lvl==='Baixo'?'baixo':lvl==='Moderado'?'moderado':lvl==='Alto'?'alto':'critico';const d=document.createElement('div');d.className='risk-row';d.innerHTML=`<div><b>${V8Report.esc(r.perigo)}</b><br><span>${V8Report.esc(r.ghe||r.funcao||'-')}</span></div><div>${V8Report.esc(r.grupo)}</div><div>P ${r.prob} × S ${r.sev}</div><div class="risk-level ${cl}">${lvl}</div><div>${V8Report.esc(r.status||'Pendente')}</div><div class="entity-actions"><button class="outline">Editar</button><button class="danger">Excluir</button></div>`;const bs=d.querySelectorAll('button');bs[0].onclick=()=>openEntityModal('risco',i);bs[1].onclick=()=>{if(confirm('Excluir este risco?')){project.riscos.splice(i,1);renderAll()}};root.appendChild(d)})}
 function renderPlano(){const rows=project.riscos.filter(r=>r.acao);$('planoTable').innerHTML=rows.length?`<table class="table"><thead><tr><th>Risco</th><th>Nível</th><th>Ação</th><th>Responsável</th><th>Prazo</th><th>Status</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${V8Report.esc(r.perigo)}</td><td>${V8Report.level(Number(r.prob)*Number(r.sev))}</td><td>${V8Report.esc(r.acao)}</td><td>${V8Report.esc(r.responsavel||'-')}</td><td>${V8Report.fmt(r.prazo)}</td><td>${V8Report.esc(r.status||'Pendente')}</td></tr>`).join('')}</tbody></table>`:'<div class="notice">Cadastre ações nos riscos do inventário para formar o plano de ação.</div>'}
-function renderPgrSummary(){const p=collect(),high=p.riscos.filter(r=>Number(r.prob)*Number(r.sev)>=10).length;$('pgrSummary').innerHTML=`<div class="cards metrics" style="grid-template-columns:repeat(4,1fr)"><article><b>${p.setores.length}</b><span>Setores</span></article><article><b>${p.ghe.length}</b><span>GHEs</span></article><article><b>${p.riscos.length}</b><span>Riscos</span></article><article><b>${high}</b><span>Altos/críticos</span></article></div>`}
+function renderPgrSummary(){
+ const p=collect(),high=p.riscos.filter(r=>Number(r.prob)*Number(r.sev)>=10).length,d=p.drps||{n:0,altos:[]};
+ $('pgrSummary').innerHTML=`<div class="cards metrics" style="grid-template-columns:repeat(5,1fr)"><article><b>${p.setores.length}</b><span>Setores</span></article><article><b>${p.ghe.length}</b><span>GHEs</span></article><article><b>${p.riscos.length}</b><span>Riscos</span></article><article><b>${high}</b><span>Altos/críticos</span></article><article><b>${d.n||0}</b><span>DRPS respostas</span></article></div>
+ <div class="notice" style="margin-top:12px">${d.n?`O PGR inclui o resultado coletivo do DRPS (${d.n} resposta(s); ${(d.altos||[]).length} tópico(s) com gravidade alta).`:'O PGR reserva a seção de riscos psicossociais. Quando houver respostas do DRPS, o resultado entra automaticamente no documento.'}</div>`;
+}
 function previewPgr(){const p=collect();if(!p.empresa.razaoSocial)return alert('Cadastre o condomínio primeiro.');window._previewProject=p;$('reportPreview').innerHTML=V8Report.build(p);$('reportModal').classList.remove('hidden')}
 function drpsUrl(){
  V8Storage.ensureDrpsToken(project);
@@ -333,7 +339,7 @@ function drpsUrl(){
 }
 function renderNr1(){
  V8Storage.ensureDrpsToken(project);
- if(project.empresa?.razaoSocial) V8Storage.save(collect());
+ if(project.empresa?.razaoSocial) V8Storage.save(project);
  if($('drpsLink')) $('drpsLink').value=drpsUrl();
  const list=V8Storage.drpsList(project.id);
  const sum=$('drpsSummary');

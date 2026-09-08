@@ -91,5 +91,36 @@ const DRPSData=(()=>{
   if(!scores.length) return 0;
   return scores.reduce((a,b)=>a+b,0)/scores.length;
  }
- return {SCALE,TOPICS,QUESTIONS:Q,corrected,gravidade,topicAvg};
+ const FONTES={
+  1:'Cultura permissiva a desrespeito; ausência de canal de denúncia; liderança despreparada; comunicação violenta.',
+  2:'Liderança ausente; falta de escuta; cobrança sem acompanhamento; RH pouco atuante.',
+  3:'Comunicação inadequada; mudanças abruptas; falta de planejamento; insegurança quanto à estabilidade.',
+  4:'Falta de definição de responsabilidades; ordens contraditórias; comunicação confusa; atribuições mal definidas.',
+  5:'Ausência de feedback; foco exclusivo em metas; reconhecimento desigual; falta de plano de crescimento.',
+  6:'Microgestão; excesso de burocracia; centralização de decisões; baixa confiança na equipe.',
+  7:'Critérios pouco transparentes; favorecimento; desigualdade de tratamento; decisões pouco claras.',
+  8:'Falta de protocolos de segurança; exposição a risco; ausência de treinamento; falta de suporte pós-evento.',
+  9:'Subutilização de competências; ociosidade; má distribuição de tarefas; funções pouco desafiadoras.',
+  10:'Metas irrealistas; equipe insuficiente; jornadas prolongadas; acúmulo de funções.',
+  11:'Comunicação agressiva; rivalidade interna; conflitos mal geridos; liderança despreparada.',
+  12:'Turnos desalinhados; distância física; falha nos meios de comunicação; fluxo de informação inadequado.',
+  13:'Isolamento social; falta de acompanhamento; comunicação exclusivamente digital; baixa integração da equipe.'
+ };
+ const AGRAVOS='Transtornos psicológicos e emocionais, burnout, ansiedade, insônia, medo, desmotivação e demais agravos à saúde mental quando o fator não é identificado e controlado.';
+ function bundle(list){
+  list=Array.isArray(list)?list:[];
+  const topicos=TOPICS.map(t=>{
+   const avgs=list.map(r=>topicAvg(r.answers||{},t)).filter(v=>v>0);
+   const avg=avgs.length?avgs.reduce((a,b)=>a+b,0)/avgs.length:0;
+   const g=gravidade(Math.round(avg));
+   return {id:t.id,nome:t.nome,media:avg,gravidade:g.l,gravidadeN:g.n,fonte:FONTES[t.id]||'',agravo:AGRAVOS};
+  });
+  const porSetor={};
+  list.forEach(r=>{
+   const k=String(r.setor||'Não informado').trim()||'Não informado';
+   porSetor[k]=(porSetor[k]||0)+1;
+  });
+  return {n:list.length,topicos,porSetor,altos:topicos.filter(t=>t.gravidadeN>=3)};
+ }
+ return {SCALE,TOPICS,QUESTIONS:Q,corrected,gravidade,topicAvg,bundle,FONTES,AGRAVOS};
 })();
