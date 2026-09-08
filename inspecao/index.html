@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#075e45">
+  <title>Futuro Facilite SST — V7.1</title>
+  <script>if(window.self!==window.top)document.documentElement.classList.add('embedded')</script>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/report.css">
+</head>
+<body>
+<header class="app-header">
+  <div class="app-brand">
+    <img src="assets/logo.png" alt="Futuro Facilite Treinamentos">
+    <div>
+      <strong>Sistema de Inspeções SST</strong>
+      <span>Futuro Facilite Treinamentos</span>
+    </div>
+  </div>
+</header>
+
+<main class="container">
+  <nav class="toolbar">
+    <button class="primary" id="newBtn">＋ Nova inspeção</button>
+    <button class="outline" id="saveBtn">Salvar</button>
+    <button class="outline" id="savedBtn">Relatórios salvos</button>
+    <button class="dark" id="previewBtn">Prévia profissional</button>
+    <button class="dark" id="pdfBtn">Gerar PDF</button>
+    <button class="dark" id="csvBtn">Planilha</button>
+  </nav>
+
+  <div id="editingBanner" class="editing-banner hidden">
+    Você está editando um relatório salvo. Após as correções, toque em <b>Salvar alterações</b>.
+  </div>
+
+  <section class="card">
+    <div class="section-head">
+      <div><span class="eyebrow">RELATÓRIO</span><h2>Identificação da inspeção</h2></div>
+      <div class="report-number">Nº <span id="reportNumber">SST-2026-0001</span></div>
+    </div>
+    <div class="form-grid two">
+      <label>Condomínio<input id="condominio" placeholder="Nome do condomínio"></label>
+      <label>CNPJ<input id="cnpj" placeholder="00.000.000/0000-00" inputmode="numeric" maxlength="18"></label>
+      <label class="span2">Endereço<input id="endereco"></label>
+      <label>Síndica / responsável<input id="sindica"></label>
+      <label>Telefone do condomínio<input id="telefone"></label>
+      <label>E-mail do condomínio<input id="emailCondominio" type="email"></label>
+      <label>Data da inspeção<input id="dataVisita" type="date"></label>
+<label>Técnico responsável<input id="tecnico" value="Francson Menezes Alves"></label>
+<label class="span2">Objetivo<textarea id="objetivo">Avaliar as condições de segurança e saúde no ambiente de trabalho do condomínio, identificar perigos e recomendar medidas preventivas e corretivas.</textarea></label>
+      <label>Foto de capa
+        <input id="fotoCapaInput" type="file" accept="image/*">
+      </label>
+      <div id="fotoCapaPreview" class="cover-photo-preview"></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="section-head"><div><span class="eyebrow">EQUIPE</span><h2>Colaboradores e atividades</h2></div></div>
+    <div class="form-grid three">
+      <label>Total de empregados<input id="totalEmpregados" type="number" min="0"></label>
+      <label>Próprios<input id="proprios" type="number" min="0"></label>
+      <label>Terceirizados<input id="terceirizados" type="number" min="0"></label>
+      <label class="span3">Funções existentes<textarea id="funcoes" placeholder="Porteiro, zelador, auxiliar de serviços gerais..."></textarea></label>
+      <label class="span3">Jornadas e turnos<textarea id="jornadas" placeholder="Ex.: 12x36, horário comercial..."></textarea></label>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="section-head">
+      <div><span class="eyebrow">VISTORIA</span><h2>Checklist técnico</h2></div>
+      <div class="summary-mini">
+        <span class="ok"><b id="sumConforme">0</b> conformes</span>
+        <span class="bad"><b id="sumNaoConforme">0</b> não conformes</span>
+        <span><b id="sumPendente">0</b> pendentes</span>
+      </div>
+    </div>
+    <div id="checklist"></div>
+  </section>
+
+  <section class="card">
+    <div class="section-head"><div><span class="eyebrow">ENCERRAMENTO</span><h2>Conclusão e recomendações</h2></div></div>
+    <div class="form-grid two">
+      <label>Conclusão técnica<textarea id="conclusao" placeholder="Pode preencher manualmente ou usar a sugestão automática."></textarea></label>
+      <label>Recomendações gerais<textarea id="recomendacoes" placeholder="Recomendações prioritárias e orientações gerais."></textarea></label>
+      <div class="span2 auto-actions">
+        <button type="button" class="outline" id="autoConclusionBtn">Gerar sugestão de conclusão</button>
+      </div>
+      <label>Responsável pelo condomínio<input id="assinaturaSindica" placeholder="Nome completo"></label>
+      <label>Técnico responsável<input id="assinaturaTecnico" value="Francson Menezes Alves"></label>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="section-head"><div><span class="eyebrow">HISTÓRICO</span><h2>Relatórios salvos neste aparelho</h2></div></div>
+    <div id="history"></div>
+  </section>
+</main>
+
+<div id="savedModal" class="modal-backdrop hidden">
+  <div class="modal">
+    <div class="modal-head">
+      <div><span class="eyebrow">ARQUIVO</span><h2>Relatórios salvos</h2></div>
+      <button class="danger small" id="closeSaved">Fechar</button>
+    </div>
+    <div class="search-row"><input id="searchSaved" placeholder="Pesquisar condomínio..."></div>
+    <div id="savedList"></div>
+  </div>
+</div>
+
+<div id="previewModal" class="modal-backdrop hidden">
+  <div class="modal preview-modal">
+    <div class="modal-head">
+      <div><span class="eyebrow">DOCUMENTO</span><h2>Prévia profissional do relatório</h2></div>
+      <div class="modal-actions">
+        <button class="outline small" id="editFromPreview">Editar</button>
+        <button class="dark small" id="printFromPreview">Imprimir / PDF</button>
+        <button class="danger small" id="closePreview">Fechar</button>
+      </div>
+    </div>
+    <div id="reportPreview" class="report-preview"></div>
+  </div>
+</div>
+
+<script src="js/storage.js"></script>
+<script src="js/report.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

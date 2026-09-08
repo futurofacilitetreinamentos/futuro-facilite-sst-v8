@@ -17,6 +17,7 @@
     </div>
     <nav id="menu">
       <button data-view="dashboard" class="active">▦ Dashboard</button>
+      <button data-view="inspecao">☑ Checklist de Inspeção SST</button>
       <button data-view="empresa">🏢 Empresa</button>
       <button data-view="setores">▤ Setores</button>
       <button data-view="funcoes">👷 Funções</button>
@@ -54,8 +55,12 @@
       </div>
       <div class="cards two">
         <article class="panel"><h3>Andamento do projeto</h3><div id="progressList"></div></article>
-        <article class="panel"><h3>Próximos módulos</h3><div class="roadmap"><span class="done">NR-1 / GRO</span><span class="done">PGR</span><span>PCMSO</span><span>LTCAT</span><span>eSocial SST</span></div></article>
+        <article class="panel"><h3>Próximos módulos</h3><div class="roadmap"><span class="done">NR-1 / GRO</span><span class="done">PGR</span><span class="done">Checklist de Inspeção SST</span><span>PCMSO</span><span>LTCAT</span><span>eSocial SST</span></div></article>
       </div>
+    </section>
+
+    <section id="view-inspecao" class="view view-inspecao">
+      <iframe id="inspecaoFrame" title="Checklist de Inspeção SST" src="inspecao/index.html"></iframe>
     </section>
 
     <section id="view-empresa" class="view">

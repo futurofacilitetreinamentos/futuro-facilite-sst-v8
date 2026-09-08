@@ -6,6 +6,7 @@ Sistema-base para cadastro central de empresas e gerenciamento integrado de SST.
 
 MÓDULOS FUNCIONAIS NESTA VERSÃO
 - Dashboard
+- Checklist de Inspeção SST (módulo incorporado da V7.1)
 - Cadastro da organização
 - Setores / ambientes
 - Cargos e funções
