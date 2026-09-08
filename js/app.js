@@ -24,7 +24,7 @@ function openView(v,btn){
  document.body.classList.toggle('inspecao-open',v==='inspecao');
  if(v==='inspecao'){
   const f=$('inspecaoFrame');
-  if(f && f.dataset.loaded!=='1'){ f.src='inspecao/index.html?v=8.3'; f.dataset.loaded='1'; }
+  if(f && f.dataset.loaded!=='1'){ f.src=new URL('inspecao/index.html?v=8.4', document.baseURI).href; f.dataset.loaded='1'; }
  }
  if(v==='plano')renderPlano();
  if(v==='pgr')renderPgrSummary();

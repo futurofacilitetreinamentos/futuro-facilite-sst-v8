@@ -13,12 +13,25 @@ let currentId=null, coverPhoto='', photos={};
 const $=id=>document.getElementById(id);
 const fields=['condominio','cnpj','endereco','sindica','telefone','emailCondominio','dataVisita','tecnico','objetivo','totalEmpregados','proprios','terceirizados','funcoes','jornadas','conclusao','recomendacoes','assinaturaSindica','assinaturaTecnico'];
 
+function inFrame(){
+ try{ return window.self!==window.top; }catch(e){ return true; }
+}
 function currentUser(){
- return (window.FFAuth && FFAuth.session()) || (parent.FFAuth && parent.FFAuth.session()) || null;
+ try{
+  if(inFrame() && parent.FFAuth){
+   const s=parent.FFAuth.session();
+   if(s) return s;
+  }
+ }catch(e){}
+ return (window.FFAuth && FFAuth.session()) || null;
 }
 function init(){
  const session=currentUser();
- if(!session){ location.replace('../'); return; }
+ if(!session){
+  if(inFrame()) return;
+  location.replace('../index.html');
+  return;
+ }
  $('dataVisita').value=new Date().toISOString().slice(0,10);
  $('tecnico').value=session.name;
  $('assinaturaTecnico').value=session.name;
