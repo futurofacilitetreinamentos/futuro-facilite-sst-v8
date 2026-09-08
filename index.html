@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#075e45">
 <title>Futuro Facilite SST V8</title>
-<link rel="stylesheet" href="css/style.css?v=8.2">
-<link rel="stylesheet" href="css/report.css?v=8.2">
+<link rel="stylesheet" href="css/style.css?v=8.3">
+<link rel="stylesheet" href="css/report.css?v=8.3">
 </head>
 <body>
 <div id="loginScreen" class="login-screen">
@@ -14,14 +14,23 @@
     <img src="assets/logo.jpeg" alt="Futuro Facilite Treinamentos">
     <span class="eyebrow">ACESSO RESTRITO</span>
     <h1>Sistema SST V8</h1>
-    <p>Entre com seu usuário para inspecionar, gerar PGR e gerenciar os projetos.</p>
-    <label>Usuário<input id="loginUser" name="username" autocomplete="username" required></label>
-    <label>Senha
-      <span class="pass-wrap">
-        <input id="loginPass" name="password" type="password" autocomplete="current-password" required>
-        <button type="button" id="togglePass" class="ghost">Mostrar</button>
-      </span>
-    </label>
+    <p>Entre com seu e-mail cadastrado para acessar inspeções, PGR e todo o sistema.</p>
+    <label>E-mail<input id="loginUser" name="username" type="email" autocomplete="username" placeholder="seu@email.com" required></label>
+    <div id="loginPassBox">
+      <label>Senha
+        <span class="pass-wrap">
+          <input id="loginPass" name="password" type="password" autocomplete="current-password">
+          <button type="button" id="togglePass" class="ghost">Mostrar</button>
+        </span>
+      </label>
+    </div>
+    <div id="loginSetup" class="hidden">
+      <p class="setup-note">Primeiro acesso: confirme seus dados e crie a senha.</p>
+      <label>CPF<input id="loginCpf" inputmode="numeric" maxlength="14" placeholder="000.000.000-00"></label>
+      <label>Data de nascimento<input id="loginBirth" type="date"></label>
+      <label>Criar senha<input id="loginNewPass" type="password" autocomplete="new-password"></label>
+      <label>Confirmar senha<input id="loginNewPass2" type="password" autocomplete="new-password"></label>
+    </div>
     <label class="check"><input id="loginRemember" type="checkbox"> Manter conectado neste aparelho</label>
     <div id="loginError" class="login-error"></div>
     <button class="primary" type="submit">Entrar</button>
@@ -189,10 +198,12 @@
       <div class="panel" data-admin-only>
         <div class="panel-head"><div><span class="eyebrow">NOVO ACESSO</span><h2>Cadastrar usuário</h2></div></div>
         <div class="form-grid two">
-          <label>Usuário<input id="newUserLogin" placeholder="ex.: joao.silva"></label>
           <label>Nome completo<input id="newUserName"></label>
-          <label>Senha<input id="newUserPass" type="password"></label>
-          <label>Perfil<select id="newUserRole"><option value="tecnico">Técnico</option><option value="admin">Administrador</option></select></label>
+          <label>E-mail<input id="newUserLogin" type="email" placeholder="email@dominio.com"></label>
+          <label>CPF<input id="newUserCpf" inputmode="numeric" maxlength="14" placeholder="000.000.000-00"></label>
+          <label>Data de nascimento<input id="newUserBirth" type="date"></label>
+          <label>Senha inicial (opcional)<input id="newUserPass" type="password"></label>
+          <label>Perfil<select id="newUserRole"><option value="admin">Administrador</option><option value="tecnico">Técnico</option></select></label>
         </div>
         <div class="actions" style="margin-top:12px"><button class="primary" id="addUserBtn" type="button">Cadastrar acesso</button></div>
       </div>
@@ -219,9 +230,9 @@
 <div id="modal" class="modal-backdrop hidden"><div class="modal"><div class="modal-head"><h2 id="modalTitle">Cadastro</h2><button id="closeModal" class="danger">Fechar</button></div><div id="modalBody"></div></div></div>
 <div id="reportModal" class="modal-backdrop hidden"><div class="modal report-modal"><div class="modal-head"><h2>Prévia do PGR</h2><div><button id="printFromPreview" class="dark">Imprimir / PDF</button><button id="closeReport" class="danger">Fechar</button></div></div><div id="reportPreview" class="report-preview"></div></div></div>
 
-<script src="js/auth.js?v=8.2"></script>
-<script src="js/storage.js?v=8.2"></script>
-<script src="js/report.js?v=8.2"></script>
-<script src="js/app.js?v=8.2"></script>
+<script src="js/auth.js?v=8.3"></script>
+<script src="js/storage.js?v=8.3"></script>
+<script src="js/report.js?v=8.3"></script>
+<script src="js/app.js?v=8.3"></script>
 </body>
 </html>

@@ -11,6 +11,7 @@ function init(){
  $('closeModal').onclick=closeModal;$('previewPgr').onclick=previewPgr;$('printPgr').onclick=()=>V8Report.print(collect());$('closeReport').onclick=closeReport;$('printFromPreview').onclick=()=>V8Report.print(window._previewProject||collect());
  $('searchProjects').oninput=renderProjects;$('cnpj').oninput=e=>e.target.value=formatCNPJ(e.target.value);
  $('addUserBtn').onclick=addAccessUser;$('changePassBtn').onclick=changeMyPassword;
+ $('newUserCpf')?.addEventListener('input',e=>e.target.value=FFAuth.formatCPF(e.target.value));
  renderAll();
 }
 function openView(v,btn){
@@ -23,7 +24,7 @@ function openView(v,btn){
  document.body.classList.toggle('inspecao-open',v==='inspecao');
  if(v==='inspecao'){
   const f=$('inspecaoFrame');
-  if(f && f.dataset.loaded!=='1'){ f.src='inspecao/index.html?v=8.2'; f.dataset.loaded='1'; }
+  if(f && f.dataset.loaded!=='1'){ f.src='inspecao/index.html?v=8.3'; f.dataset.loaded='1'; }
  }
  if(v==='plano')renderPlano();
  if(v==='pgr')renderPgrSummary();
@@ -75,15 +76,26 @@ function renderAcessos(){
  if(!root) return;
  if(!s || s.role!=='admin'){ root.innerHTML=''; return; }
  const list=FFAuth.allUsers();
- root.innerHTML=list.map(u=>`<div class="entity-card"><div class="entity-head"><div><div class="entity-title">${V8Report.esc(u.name)}</div><div class="entity-meta">${V8Report.esc(u.user)} · ${u.role==='admin'?'Administrador':'Técnico'}${u.extra?'':' · usuário padrão'}</div></div>${u.extra?`<div class="entity-actions"><button class="danger" data-del="${V8Report.esc(u.user)}">Excluir</button></div>`:''}</div></div>`).join('');
+ root.innerHTML=list.map(u=>{
+  const birth=u.birth?u.birth.split('-').reverse().join('/'):'—';
+  const cpf=FFAuth.formatCPF(u.cpf||'');
+  return `<div class="entity-card"><div class="entity-head"><div><div class="entity-title">${V8Report.esc(u.name)}</div><div class="entity-meta">${V8Report.esc(u.email||u.user)} · CPF ${V8Report.esc(cpf||'—')} · ${V8Report.esc(birth)} · ${u.role==='admin'?'Administrador':'Técnico'}${u.extra?'':' · cadastro principal'}</div></div>${u.extra?`<div class="entity-actions"><button class="danger" data-del="${V8Report.esc(u.user)}">Excluir</button></div>`:''}</div></div>`;
+ }).join('');
  root.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{ if(!confirm('Excluir este acesso?'))return; const r=FFAuth.removeUser(b.dataset.del); if(!r.ok)return alert(r.error); renderAcessos(); });
 }
 async function addAccessUser(){
- const res=await FFAuth.addUser({user:$('newUserLogin').value,name:$('newUserName').value,pass:$('newUserPass').value,role:$('newUserRole').value});
+ const res=await FFAuth.addUser({
+  email:$('newUserLogin').value,
+  name:$('newUserName').value,
+  pass:$('newUserPass').value,
+  cpf:$('newUserCpf').value,
+  birth:$('newUserBirth').value,
+  role:$('newUserRole').value
+ });
  if(!res.ok)return alert(res.error);
- $('newUserLogin').value=$('newUserName').value=$('newUserPass').value='';
+ $('newUserLogin').value=$('newUserName').value=$('newUserPass').value=$('newUserCpf').value=$('newUserBirth').value='';
  renderAcessos();
- alert('Acesso cadastrado.');
+ alert('Cadastro criado. No primeiro acesso, a pessoa confirma CPF e data de nascimento e cria a senha.');
 }
 async function changeMyPassword(){
  const s=FFAuth.session(); if(!s)return;

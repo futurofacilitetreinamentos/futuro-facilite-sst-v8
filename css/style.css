@@ -14,6 +14,7 @@ button.ghost{background:#f2f4f7;color:#344054;border:1px solid #d0d5dd;padding:8
 .login-card .check{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:#344054}
 .login-card .check input{width:auto;margin:0}
 .login-error{min-height:18px;color:var(--danger);font-size:12px;font-weight:700}
+.setup-note{margin:4px 0 8px!important;background:#ecfdf3;border:1px solid #a7e3c4;border-radius:8px;padding:8px 10px;color:#065f46;font-size:12px!important;font-weight:700}
 .login-card small{text-align:center;color:var(--muted)}
 .side-user{margin-top:auto;padding:12px 8px 8px;border-top:1px solid #ffffff24;display:grid;gap:4px}
 .side-user b{font-size:12px}.side-user span{font-size:10px;opacity:.8}
