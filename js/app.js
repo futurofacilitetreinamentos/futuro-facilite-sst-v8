@@ -2,7 +2,7 @@
 let project=V8Storage.blank();
 const $=id=>document.getElementById(id);
 const empFields=['razaoSocial','nomeFantasia','cnpj','cnae','grauRisco','numTrabalhadores','endereco','responsavelEmpresa','contatoEmpresa','emailEmpresa','dataElaboracao','atividadeEmpresa','respSst','funcaoRespSst','medicoTrabalho','crmMedico','engSeguranca','creaEng'];
-const needsCadastro=['agenda','inspecao','setores','funcoes','ghe','riscos','plano','pgr','laudos'];
+const needsCadastro=['agenda','inspecao','setores','funcoes','ghe','riscos','plano','pgr','nr1','laudos'];
 
 function init(){
  $('dataElaboracao').value=new Date().toISOString().slice(0,10);
@@ -15,6 +15,9 @@ function init(){
  $('newUserCpf')?.addEventListener('input',e=>e.target.value=FFAuth.formatCPF(e.target.value));
  $('agendarBtn')?.addEventListener('click',agendarInspecao);
  $('condoSelect')?.addEventListener('change',switchCondominio);
+ $('copyDrpsLink')?.addEventListener('click',copyDrpsLink);
+ $('openDrpsLink')?.addEventListener('click',()=>window.open(drpsUrl(),'_blank'));
+ $('exportDrpsCsv')?.addEventListener('click',exportDrpsCsv);
  const saved=V8Storage.ativo();
  if(saved) apply(saved,true);
  else{
@@ -40,13 +43,14 @@ function openView(v,btn){
  viewEl.classList.add('active');
  document.querySelectorAll('#menu button').forEach(x=>x.classList.remove('active'));
  (btn||document.querySelector(`[data-view="${v}"]`))?.classList.add('active');
- const names={dashboard:'Atendimento',inspecao:'Inspeção SST',empresa:'Condomínio',agenda:'Agenda',setores:'Setores',funcoes:'Funções',ghe:'GHE',riscos:'Inventário de riscos',plano:'Plano de ação',pgr:'PGR / NR-1',laudos:'Laudos',pcmso:'PCMSO',ltcat:'LTCAT',acessos:'Minha conta'};
+ const names={dashboard:'Atendimento',inspecao:'Inspeção SST',empresa:'Condomínio',agenda:'Agenda',setores:'Setores',funcoes:'Funções',ghe:'GHE',riscos:'Inventário de riscos',plano:'Plano de ação',pgr:'PGR / NR-1',nr1:'NR-1 / DRPS',laudos:'Laudos',pcmso:'PCMSO',ltcat:'LTCAT',acessos:'Minha conta'};
  $('pageTitle').textContent=names[v]||v;
  document.body.classList.toggle('inspecao-open',v==='inspecao');
  if(v==='inspecao') openInspecao();
  if(v==='agenda') renderAgenda();
  if(v==='plano') renderPlano();
  if(v==='pgr') renderPgrSummary();
+ if(v==='nr1') renderNr1();
  if(v==='laudos') renderLaudos();
  if(v==='acessos') renderAcessos();
 }
@@ -163,7 +167,7 @@ function pushInspectionContext(){
 function openInspecao(){
  const f=$('inspecaoFrame');
  if(!f) return;
- const src=new URL('inspecao/index.html?v=8.5', document.baseURI).href;
+ const src=new URL('inspecao/index.html?v=8.6', document.baseURI).href;
  if(f.dataset.loaded!=='1'){
   f.onload=()=>pushInspectionContext();
   f.src=src;
@@ -323,6 +327,60 @@ function renderRiscos(){const root=$('riscosList');root.innerHTML=project.riscos
 function renderPlano(){const rows=project.riscos.filter(r=>r.acao);$('planoTable').innerHTML=rows.length?`<table class="table"><thead><tr><th>Risco</th><th>Nível</th><th>Ação</th><th>Responsável</th><th>Prazo</th><th>Status</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${V8Report.esc(r.perigo)}</td><td>${V8Report.level(Number(r.prob)*Number(r.sev))}</td><td>${V8Report.esc(r.acao)}</td><td>${V8Report.esc(r.responsavel||'-')}</td><td>${V8Report.fmt(r.prazo)}</td><td>${V8Report.esc(r.status||'Pendente')}</td></tr>`).join('')}</tbody></table>`:'<div class="notice">Cadastre ações nos riscos do inventário para formar o plano de ação.</div>'}
 function renderPgrSummary(){const p=collect(),high=p.riscos.filter(r=>Number(r.prob)*Number(r.sev)>=10).length;$('pgrSummary').innerHTML=`<div class="cards metrics" style="grid-template-columns:repeat(4,1fr)"><article><b>${p.setores.length}</b><span>Setores</span></article><article><b>${p.ghe.length}</b><span>GHEs</span></article><article><b>${p.riscos.length}</b><span>Riscos</span></article><article><b>${high}</b><span>Altos/críticos</span></article></div>`}
 function previewPgr(){const p=collect();if(!p.empresa.razaoSocial)return alert('Cadastre o condomínio primeiro.');window._previewProject=p;$('reportPreview').innerHTML=V8Report.build(p);$('reportModal').classList.remove('hidden')}
+function drpsUrl(){
+ V8Storage.ensureDrpsToken(project);
+ return new URL('drps.html?c='+encodeURIComponent(project.drpsToken), document.baseURI).href;
+}
+function renderNr1(){
+ V8Storage.ensureDrpsToken(project);
+ if(project.empresa?.razaoSocial) V8Storage.save(collect());
+ if($('drpsLink')) $('drpsLink').value=drpsUrl();
+ const list=V8Storage.drpsList(project.id);
+ const sum=$('drpsSummary');
+ if(sum){
+  if(!list.length) sum.innerHTML='<div class="notice">Nenhuma resposta ainda. Copie o link e envie aos colaboradores, ou abra o formulário neste aparelho para preenchimento no local.</div>';
+  else{
+   const rows=DRPSData.TOPICS.map(t=>{
+    const avgs=list.map(r=>DRPSData.topicAvg(r.answers||{},t)).filter(v=>v>0);
+    const avg=avgs.length?avgs.reduce((a,b)=>a+b,0)/avgs.length:0;
+    const g=DRPSData.gravidade(Math.round(avg));
+    return `<tr><td>${V8Report.esc(t.nome)}</td><td>${avg.toFixed(2)}</td><td>${g.l}</td></tr>`;
+   }).join('');
+   sum.innerHTML=`<p class="notice">${list.length} resposta(s) coletiva(s) neste condomínio.</p><table class="table"><thead><tr><th>Tópico</th><th>Média (1–5)</th><th>Gravidade</th></tr></thead><tbody>${rows}</tbody></table>`;
+  }
+ }
+ const root=$('drpsList');
+ if(!root) return;
+ if(!list.length){ root.innerHTML='<div class="notice">As respostas aparecem aqui após o envio do formulário neste aparelho.</div>'; return; }
+ root.innerHTML=list.map(r=>{
+  const when=r.ts?new Date(r.ts).toLocaleString('pt-BR'):'';
+  return `<div class="entity-card"><div class="entity-head"><div><div class="entity-title">${V8Report.esc(r.funcao||'Função não informada')} · ${V8Report.esc(r.setor||'Setor não informado')}</div><div class="entity-meta">${V8Report.esc(when)} · análise coletiva, sem nome</div></div></div></div>`;
+ }).join('');
+}
+async function copyDrpsLink(){
+ const url=drpsUrl();
+ $('drpsLink').value=url;
+ try{ await navigator.clipboard.writeText(url); alert('Link copiado. Envie aos colaboradores do condomínio.'); }
+ catch(e){ $('drpsLink').select(); document.execCommand('copy'); alert('Link copiado.'); }
+}
+function exportDrpsCsv(){
+ const list=V8Storage.drpsList(project.id);
+ if(!list.length) return alert('Ainda não há respostas para exportar.');
+ const head=['Carimbo de data/hora','Qual o seu cargo/ Função? ','Qual o seu Setor? '].concat(DRPSData.QUESTIONS.map(q=>String(q.n).padStart(2,'0')+' - '+q.title));
+ const rows=list.map(r=>[
+  r.ts?new Date(r.ts).toLocaleString('pt-BR'):'',
+  r.funcao||'',
+  r.setor||'',
+  ...DRPSData.QUESTIONS.map(q=>r.answers?.[q.n]??'')
+ ]);
+ const csv=[head,...rows].map(line=>line.map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(';')).join('\n');
+ const b=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'});
+ const a=document.createElement('a');
+ a.href=URL.createObjectURL(b);
+ a.download=`DRPS_${(project.empresa?.razaoSocial||'condominio').replace(/[^\w]+/g,'_')}.csv`;
+ a.click();
+ URL.revokeObjectURL(a.href);
+}
 function renderAcessos(){
  const s=FFAuth.session();
  const root=$('usersList');

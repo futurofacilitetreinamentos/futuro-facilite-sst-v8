@@ -3,9 +3,11 @@ const V8Storage=(()=>{
  const KEY='ff_sst_v8_projects';
  const ATIVO='ff_sst_v8_ativo';
  const REPORTS='ff_sst_v7_reports';
+ const DRPS='ff_sst_v8_drps';
  function list(){try{return JSON.parse(localStorage.getItem(KEY)||'[]')}catch(e){return[]}}
  function save(p){
   p.agenda=Array.isArray(p.agenda)?p.agenda:[];
+  if(!p.drpsToken) p.drpsToken='d'+p.id+Math.random().toString(36).slice(2,8);
   const a=list(),i=a.findIndex(x=>x.id===p.id);
   if(i>=0)a[i]=p;else a.unshift(p);
   localStorage.setItem(KEY,JSON.stringify(a));
@@ -32,5 +34,24 @@ const V8Storage=(()=>{
    return all.filter(r=>r.condominioId===condoId || (!r.condominioId && nome && String(r.condominio||'').trim().toLowerCase()===nome));
   }catch(e){return[]}
  }
- return{list,save,get,remove,ativoId,setAtivo,ativo,blank,inspections}
+ function ensureDrpsToken(p){
+  if(!p.drpsToken){ p.drpsToken='d'+p.id+Math.random().toString(36).slice(2,8); }
+  return p.drpsToken;
+ }
+ function byDrpsToken(token){ return list().find(p=>p.drpsToken===token) }
+ function drpsList(condoId){
+  try{
+   const all=JSON.parse(localStorage.getItem(DRPS)||'[]');
+   if(!condoId) return all;
+   const tok=get(condoId)?.drpsToken;
+   return all.filter(r=>r.condominioId===condoId || (tok && r.token===tok));
+  }catch(e){return[]}
+ }
+ function saveDrps(rec){
+  const all=drpsList();
+  all.unshift(rec);
+  localStorage.setItem(DRPS,JSON.stringify(all));
+  return rec;
+ }
+ return{list,save,get,remove,ativoId,setAtivo,ativo,blank,inspections,ensureDrpsToken,byDrpsToken,drpsList,saveDrps}
 })();

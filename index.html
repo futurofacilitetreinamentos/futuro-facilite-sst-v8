@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#075e45">
 <title>Futuro Facilite SST V8</title>
-<script>if(window.self!==window.top){location.replace(new URL('inspecao/index.html?v=8.5',location.href).href)}</script>
-<link rel="stylesheet" href="css/style.css?v=8.5">
-<link rel="stylesheet" href="css/report.css?v=8.5">
+<script>if(window.self!==window.top){location.replace(new URL('inspecao/index.html?v=8.6',location.href).href)}</script>
+<link rel="stylesheet" href="css/style.css?v=8.6">
+<link rel="stylesheet" href="css/report.css?v=8.6">
 </head>
 <body>
 <div id="loginScreen" class="login-screen">
@@ -55,6 +55,7 @@
       <button data-view="riscos">⚠ Inventário de riscos</button>
       <button data-view="plano">✓ Plano de ação</button>
       <button data-view="pgr">📄 PGR / NR-1</button>
+      <button data-view="nr1">🧠 NR-1 / DRPS</button>
       <button data-view="laudos">📑 Laudos</button>
       <button data-view="pcmso">🩺 PCMSO</button>
       <button data-view="ltcat">📋 LTCAT</button>
@@ -194,6 +195,29 @@
       </div>
     </section>
 
+    <section id="view-nr1" class="view">
+      <div class="panel">
+        <div class="panel-head"><div><span class="eyebrow">NR-1</span><h2>Diagnóstico de Risco Psicossocial</h2></div></div>
+        <div class="notice">Envie o link aos colaboradores do condomínio. São 50 perguntas em 15 páginas, no modelo do formulário que você já usa. As respostas entram na análise coletiva, sem identificação nominal.</div>
+        <label>Link para os colaboradores
+          <input id="drpsLink" readonly>
+        </label>
+        <div class="actions" style="margin-top:12px">
+          <button class="primary" type="button" id="copyDrpsLink">Copiar link</button>
+          <button class="outline" type="button" id="openDrpsLink">Abrir formulário</button>
+          <button class="dark" type="button" id="exportDrpsCsv">Exportar planilha</button>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div><span class="eyebrow">COLETIVO</span><h2>Resumo por tópico</h2></div></div>
+        <div id="drpsSummary"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div><span class="eyebrow">RESPOSTAS</span><h2>Colaboradores que responderam</h2></div></div>
+        <div id="drpsList"></div>
+      </div>
+    </section>
+
     <section id="view-pcmso" class="view">
       <div class="module-coming">
         <div class="big-icon">🩺</div><h2>PCMSO — módulo médico</h2>
@@ -252,9 +276,10 @@
 <div id="modal" class="modal-backdrop hidden"><div class="modal"><div class="modal-head"><h2 id="modalTitle">Cadastro</h2><button id="closeModal" class="danger">Fechar</button></div><div id="modalBody"></div></div></div>
 <div id="reportModal" class="modal-backdrop hidden"><div class="modal report-modal"><div class="modal-head"><h2>Prévia do PGR</h2><div><button id="printFromPreview" class="dark">Imprimir / PDF</button><button id="closeReport" class="danger">Fechar</button></div></div><div id="reportPreview" class="report-preview"></div></div></div>
 
-<script src="js/auth.js?v=8.5"></script>
-<script src="js/storage.js?v=8.5"></script>
-<script src="js/report.js?v=8.5"></script>
-<script src="js/app.js?v=8.5"></script>
+<script src="js/auth.js?v=8.6"></script>
+<script src="js/storage.js?v=8.6"></script>
+<script src="js/drps-data.js?v=8.6"></script>
+<script src="js/report.js?v=8.6"></script>
+<script src="js/app.js?v=8.6"></script>
 </body>
 </html>
