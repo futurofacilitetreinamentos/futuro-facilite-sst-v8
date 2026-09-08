@@ -1,7 +1,8 @@
 
-let project={id:Date.now().toString(),empresa:{},setores:[],funcoes:[],ghe:[],riscos:[],salvoEm:''};
+let project=V8Storage.blank();
 const $=id=>document.getElementById(id);
 const empFields=['razaoSocial','nomeFantasia','cnpj','cnae','grauRisco','numTrabalhadores','endereco','responsavelEmpresa','contatoEmpresa','emailEmpresa','dataElaboracao','atividadeEmpresa','respSst','funcaoRespSst','medicoTrabalho','crmMedico','engSeguranca','creaEng'];
+const needsCadastro=['agenda','inspecao','setores','funcoes','ghe','riscos','plano','pgr','laudos'];
 
 function init(){
  $('dataElaboracao').value=new Date().toISOString().slice(0,10);
@@ -9,35 +10,288 @@ function init(){
  $('newProjectBtn').onclick=newProject;$('saveProjectBtn').onclick=saveProject;
  $('addSetor').onclick=()=>openEntityModal('setor');$('addFuncao').onclick=()=>openEntityModal('funcao');$('addGhe').onclick=()=>openEntityModal('ghe');$('addRisco').onclick=()=>openEntityModal('risco');
  $('closeModal').onclick=closeModal;$('previewPgr').onclick=previewPgr;$('printPgr').onclick=()=>V8Report.print(collect());$('closeReport').onclick=closeReport;$('printFromPreview').onclick=()=>V8Report.print(window._previewProject||collect());
- $('searchProjects').oninput=renderProjects;$('cnpj').oninput=e=>e.target.value=formatCNPJ(e.target.value);
+ $('cnpj').oninput=e=>e.target.value=formatCNPJ(e.target.value);
  $('addUserBtn').onclick=addAccessUser;$('changePassBtn').onclick=changeMyPassword;
  $('newUserCpf')?.addEventListener('input',e=>e.target.value=FFAuth.formatCPF(e.target.value));
+ $('agendarBtn')?.addEventListener('click',agendarInspecao);
+ $('condoSelect')?.addEventListener('change',switchCondominio);
+ const saved=V8Storage.ativo();
+ if(saved) apply(saved,true);
+ else{
+  const session=FFAuth.session();
+  $('respSst').value=session?.name||'Francson Menezes Alves';
+  $('agTecnico').value=session?.name||'';
+ }
  renderAll();
 }
+function hasCadastro(){return !!(project.empresa?.razaoSocial||$('razaoSocial')?.value)}
+function condoName(){return project.empresa?.razaoSocial||'Condomínio sem nome'}
+function go(view){openView(view,document.querySelector(`[data-view="${view}"]`))}
 function openView(v,btn){
+ collect();
+ if(needsCadastro.includes(v) && !hasCadastro()){
+  alert('Cadastre o condomínio primeiro. Depois a agenda, a inspeção e os laudos usam esses dados.');
+  v='empresa';
+  btn=document.querySelector('[data-view="empresa"]');
+ }
+ const viewEl=$('view-'+v);
+ if(!viewEl) return;
  document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));
- $('view-'+v).classList.add('active');
+ viewEl.classList.add('active');
  document.querySelectorAll('#menu button').forEach(x=>x.classList.remove('active'));
- btn?.classList.add('active');
- const names={dashboard:'Dashboard',inspecao:'Checklist de Inspeção SST',empresa:'Empresa',setores:'Setores',funcoes:'Funções',ghe:'GHE',riscos:'Inventário de riscos',plano:'Plano de ação',pgr:'PGR / NR-1',pcmso:'PCMSO',ltcat:'LTCAT',projetos:'Projetos salvos',acessos:'Minha conta'};
+ (btn||document.querySelector(`[data-view="${v}"]`))?.classList.add('active');
+ const names={dashboard:'Atendimento',inspecao:'Inspeção SST',empresa:'Condomínio',agenda:'Agenda',setores:'Setores',funcoes:'Funções',ghe:'GHE',riscos:'Inventário de riscos',plano:'Plano de ação',pgr:'PGR / NR-1',laudos:'Laudos',pcmso:'PCMSO',ltcat:'LTCAT',acessos:'Minha conta'};
  $('pageTitle').textContent=names[v]||v;
  document.body.classList.toggle('inspecao-open',v==='inspecao');
- if(v==='inspecao'){
-  const f=$('inspecaoFrame');
-  if(f && f.dataset.loaded!=='1'){ f.src=new URL('inspecao/index.html?v=8.4', document.baseURI).href; f.dataset.loaded='1'; }
- }
- if(v==='plano')renderPlano();
- if(v==='pgr')renderPgrSummary();
- if(v==='projetos')renderProjects();
- if(v==='acessos')renderAcessos();
+ if(v==='inspecao') openInspecao();
+ if(v==='agenda') renderAgenda();
+ if(v==='plano') renderPlano();
+ if(v==='pgr') renderPgrSummary();
+ if(v==='laudos') renderLaudos();
+ if(v==='acessos') renderAcessos();
 }
 function formatCNPJ(value){const d=String(value||'').replace(/\D/g,'').slice(0,14);if(d.length<=2)return d;if(d.length<=5)return d.slice(0,2)+'.'+d.slice(2);if(d.length<=8)return d.slice(0,2)+'.'+d.slice(2,5)+'.'+d.slice(5);if(d.length<=12)return d.slice(0,2)+'.'+d.slice(2,5)+'.'+d.slice(5,8)+'/'+d.slice(8);return d.slice(0,2)+'.'+d.slice(2,5)+'.'+d.slice(5,8)+'/'+d.slice(8,12)+'-'+d.slice(12)}
-function collect(){empFields.forEach(f=>project.empresa[f]=$(f).value);project.salvoEm=new Date().toLocaleString('pt-BR');return JSON.parse(JSON.stringify(project))}
-function apply(p){project=JSON.parse(JSON.stringify(p));empFields.forEach(f=>$(f).value=project.empresa?.[f]||'');renderAll();$('projectLabel').textContent=project.empresa?.razaoSocial||'Projeto SST'}
-function saveProject(){collect();if(!project.empresa.razaoSocial)return alert('Informe a razão social.');V8Storage.save(project);renderProjects();$('projectLabel').textContent=project.empresa.razaoSocial;alert('Projeto salvo neste aparelho.')}
-function newProject(){if(!confirm('Criar um novo projeto? Salve o atual antes, se necessário.'))return;project={id:Date.now().toString(),empresa:{},setores:[],funcoes:[],ghe:[],riscos:[],salvoEm:''};empFields.forEach(f=>$(f).value='');$('dataElaboracao').value=new Date().toISOString().slice(0,10);$('respSst').value='Francson Menezes Alves';$('funcaoRespSst').value='Técnico de Segurança do Trabalho';$('projectLabel').textContent='Novo projeto SST';renderAll()}
-function renderAll(){renderSetores();renderFuncoes();renderGhe();renderRiscos();renderPlano();renderDashboard()}
-function renderDashboard(){const highs=project.riscos.filter(r=>Number(r.prob)*Number(r.sev)>=10).length;$('mSetores').textContent=project.setores.length;$('mFuncoes').textContent=project.funcoes.length;$('mGhe').textContent=project.ghe.length;$('mRiscos').textContent=project.riscos.length;$('mAltos').textContent=highs;const tasks=[['Empresa',!!project.empresa.razaoSocial],['Setores',project.setores.length>0],['Funções',project.funcoes.length>0],['GHE',project.ghe.length>0],['Inventário',project.riscos.length>0],['Plano de ação',project.riscos.some(r=>r.acao)]];$('progressList').innerHTML=tasks.map(([n,ok])=>`<div class="progress-item"><div><span>${n}</span><b>${ok?'Concluído':'Pendente'}</b></div><div class="bar"><span style="width:${ok?100:15}%"></span></div></div>`).join('')}
+function collect(){
+ empFields.forEach(f=>project.empresa[f]=$(f).value);
+ project.agenda=Array.isArray(project.agenda)?project.agenda:[];
+ project.salvoEm=new Date().toLocaleString('pt-BR');
+ return JSON.parse(JSON.stringify(project));
+}
+function apply(p,silent){
+ project=JSON.parse(JSON.stringify(p));
+ project.agenda=Array.isArray(project.agenda)?project.agenda:[];
+ empFields.forEach(f=>$(f).value=project.empresa?.[f]||'');
+ if(!project.empresa?.dataElaboracao) $('dataElaboracao').value=new Date().toISOString().slice(0,10);
+ $('projectLabel').textContent=project.empresa?.razaoSocial||'Cadastre o condomínio para iniciar';
+ V8Storage.setAtivo(project.id);
+ if(!silent) renderAll();
+ else{
+  renderCondoSelect();
+  renderDashboard();
+ }
+ pushInspectionContext();
+}
+function saveProject(){
+ collect();
+ if(!project.empresa.razaoSocial) return alert('Informe o nome do condomínio.');
+ V8Storage.save(project);
+ $('projectLabel').textContent=project.empresa.razaoSocial;
+ renderCondoSelect();
+ renderDashboard();
+ pushInspectionContext();
+ alert('Cadastro do condomínio salvo. Agenda, inspeção e laudos já usam estes dados.');
+}
+function newProject(){
+ if(project.empresa?.razaoSocial && !confirm('Iniciar cadastro de outro condomínio? Salve o atual antes, se necessário.')) return;
+ collect();
+ if(project.empresa?.razaoSocial) V8Storage.save(project);
+ project=V8Storage.blank();
+ empFields.forEach(f=>$(f).value='');
+ const session=FFAuth.session();
+ $('dataElaboracao').value=new Date().toISOString().slice(0,10);
+ $('respSst').value=session?.name||'Francson Menezes Alves';
+ $('funcaoRespSst').value='Técnico de Segurança do Trabalho';
+ $('agTecnico').value=session?.name||'';
+ $('projectLabel').textContent='Novo condomínio';
+ V8Storage.setAtivo(project.id);
+ renderAll();
+ go('empresa');
+}
+function switchCondominio(){
+ const id=$('condoSelect').value;
+ if(!id) return;
+ collect();
+ if(project.empresa?.razaoSocial) V8Storage.save(project);
+ const p=V8Storage.get(id);
+ if(p) apply(p);
+}
+function renderCondoSelect(){
+ const sel=$('condoSelect');
+ if(!sel) return;
+ const list=V8Storage.list();
+ if(!list.length){
+  sel.innerHTML='<option value="">Nenhum condomínio cadastrado</option>';
+  return;
+ }
+ sel.innerHTML=list.map(p=>`<option value="${p.id}" ${p.id===project.id?'selected':''}>${V8Report.esc(p.empresa?.razaoSocial||'Condomínio sem nome')}</option>`).join('');
+}
+function processState(){
+ const cadastro=hasCadastro();
+ const agenda=(project.agenda||[]).filter(a=>a.status!=='cancelada');
+ const agendada=agenda.length>0;
+ const inspecoes=V8Storage.inspections(project.id);
+ const inspecao=inspecoes.length>0 || agenda.some(a=>a.status==='realizada');
+ const pgr=cadastro && project.riscos.length>0;
+ return {cadastro, agendada, inspecao, pgr, laudo:inspecao||pgr, inspecoes, agenda};
+}
+function inspectionContext(){
+ const e=project.empresa||{};
+ const session=FFAuth.session();
+ const selected=(project.agenda||[]).find(a=>a.status==='agendada' && a.useNext);
+ const next=selected||(project.agenda||[]).filter(a=>a.status==='agendada').sort((a,b)=>(a.data||'').localeCompare(b.data||''))[0];
+ return {
+  condominioId:project.id,
+  condominio:e.razaoSocial||e.nomeFantasia||'',
+  cnpj:e.cnpj||'',
+  endereco:e.endereco||'',
+  sindica:e.responsavelEmpresa||'',
+  telefone:e.contatoEmpresa||'',
+  emailCondominio:e.emailEmpresa||'',
+  dataVisita:next?.data||new Date().toISOString().slice(0,10),
+  tecnico:next?.tecnico||session?.name||'',
+  agendaId:next?.id||'',
+  locked:!!e.razaoSocial
+ };
+}
+window.inspectionContext=inspectionContext;
+window.markAgendaDone=function(agendaId,inspecaoId){
+ if(!agendaId) return;
+ const a=(project.agenda||[]).find(x=>x.id===agendaId);
+ if(a){ a.status='realizada'; a.inspecaoId=inspecaoId; }
+ collect();
+ if(project.empresa?.razaoSocial) V8Storage.save(project);
+ renderAgenda();
+ renderDashboard();
+ renderLaudos();
+};
+function pushInspectionContext(){
+ const f=$('inspecaoFrame');
+ const ctx=inspectionContext();
+ try{ f?.contentWindow?.FFInspecao?.applyCadastro(ctx); }catch(e){}
+ try{ f?.contentWindow?.postMessage({type:'ff-cadastro',ctx},'*'); }catch(e){}
+}
+function openInspecao(){
+ const f=$('inspecaoFrame');
+ if(!f) return;
+ const src=new URL('inspecao/index.html?v=8.5', document.baseURI).href;
+ if(f.dataset.loaded!=='1'){
+  f.onload=()=>pushInspectionContext();
+  f.src=src;
+  f.dataset.loaded='1';
+ }else pushInspectionContext();
+}
+function renderAll(){
+ renderSetores();renderFuncoes();renderGhe();renderRiscos();renderPlano();renderDashboard();renderCondoSelect();renderAgenda();
+}
+function renderDashboard(){
+ const highs=project.riscos.filter(r=>Number(r.prob)*Number(r.sev)>=10).length;
+ $('mSetores').textContent=project.setores.length;
+ $('mFuncoes').textContent=project.funcoes.length;
+ $('mGhe').textContent=project.ghe.length;
+ $('mRiscos').textContent=project.riscos.length;
+ $('mAltos').textContent=highs;
+ const st=processState();
+ const steps=[
+  {id:'empresa', n:'1', title:'Cadastro', text:st.cadastro?condoName():'Nome, CNPJ, endereço e síndico', done:st.cadastro},
+  {id:'agenda', n:'2', title:'Agendamento', text:st.agendada?'Inspeção na agenda':'Data, horário e técnico', done:st.agendada},
+  {id:'inspecao', n:'3', title:'Inspeção', text:st.inspecao?(st.inspecoes[0]?.numero||'Checklist realizado'):'Checklist no local', done:st.inspecao},
+  {id:'laudos', n:'4', title:'Laudos', text:st.laudo?'Pronto para emitir':'Relatório de inspeção e PGR', done:st.laudo}
+ ];
+ const firstOpen=steps.find(s=>!s.done);
+ $('pipeline').innerHTML=steps.map(s=>{
+  const cls=s.done?'done':(firstOpen&&firstOpen.id===s.id?'now':'wait');
+  return `<button type="button" class="step ${cls}" data-go="${s.id}"><b>Passo ${s.n}</b><strong>${s.title}</strong><span>${V8Report.esc(s.text)}</span></button>`;
+ }).join('');
+ $('pipeline').querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>go(b.dataset.go));
+ const next=firstOpen||steps[3];
+ const labels={empresa:'Cadastrar condomínio',agenda:'Agendar inspeção',inspecao:'Realizar inspeção',laudos:'Emitir laudos'};
+ $('nextAction').innerHTML=`<button class="primary" type="button" id="goNext">${labels[next.id]}</button><span>${st.cadastro?'Condomínio em atendimento: <b>'+V8Report.esc(condoName())+'</b>':'Comece pelo cadastro único do condomínio.'}</span>`;
+ $('goNext').onclick=()=>go(next.id);
+}
+function renderAgenda(){
+ const note=$('agendaCondoNote');
+ const nome=project.empresa?.razaoSocial;
+ if(note) note.textContent=nome
+  ? `Inspeção de ${nome}. Os dados de cadastro serão preenchidos automaticamente no checklist e nos laudos.`
+  : 'Cadastre o condomínio antes de agendar.';
+ const session=FFAuth.session();
+ if($('agTecnico') && !$('agTecnico').value) $('agTecnico').value=session?.name||'';
+ if($('agData') && !$('agData').value) $('agData').value=new Date().toISOString().slice(0,10);
+ const root=$('agendaList');
+ if(!root) return;
+ const list=(project.agenda||[]).slice().sort((a,b)=>(b.data||'').localeCompare(a.data||''));
+ if(!list.length){ root.innerHTML='<div class="notice">Nenhuma inspeção agendada para este condomínio.</div>'; return; }
+ root.innerHTML=list.map(a=>{
+  const st=a.status==='realizada'?'Realizada':a.status==='cancelada'?'Cancelada':'Agendada';
+  const cls=a.status==='realizada'?'ok':a.status==='cancelada'?'bad':'';
+  return `<div class="entity-card"><div class="entity-head"><div><div class="entity-title">${V8Report.fmt(a.data)}${a.hora?' · '+V8Report.esc(a.hora):''}</div><div class="entity-meta">${V8Report.esc(a.tecnico||'-')} · <b class="${cls}">${st}</b>${a.obs?' · '+V8Report.esc(a.obs):''}</div></div><div class="entity-actions">${a.status==='agendada'?`<button class="primary" data-do="${a.id}">Iniciar inspeção</button><button class="danger" data-cancel="${a.id}">Cancelar</button>`:''}</div></div></div>`;
+ }).join('');
+ root.querySelectorAll('[data-do]').forEach(b=>b.onclick=()=>iniciarAgendada(b.dataset.do));
+ root.querySelectorAll('[data-cancel]').forEach(b=>b.onclick=()=>cancelarAgenda(b.dataset.cancel));
+}
+function agendarInspecao(){
+ collect();
+ if(!hasCadastro()) return alert('Cadastre o condomínio primeiro.');
+ const data=$('agData').value, hora=$('agHora').value, tecnico=$('agTecnico').value, obs=$('agObs').value;
+ if(!data) return alert('Informe a data da inspeção.');
+ project.agenda=project.agenda||[];
+ project.agenda.unshift({id:'ag_'+Date.now(), data, hora, tecnico, obs, status:'agendada'});
+ V8Storage.save(collect());
+ $('agObs').value='';
+ renderAgenda();
+ renderDashboard();
+ alert('Inspeção agendada. No dia, abra a inspeção: os dados do condomínio já estarão preenchidos.');
+}
+function iniciarAgendada(id){
+ const a=(project.agenda||[]).find(x=>x.id===id);
+ if(!a) return;
+ (project.agenda||[]).forEach(x=>x.useNext=x.id===id);
+ V8Storage.save(collect());
+ go('inspecao');
+}
+function cancelarAgenda(id){
+ if(!confirm('Cancelar este agendamento?')) return;
+ const a=(project.agenda||[]).find(x=>x.id===id);
+ if(a) a.status='cancelada';
+ V8Storage.save(collect());
+ renderAgenda();
+ renderDashboard();
+}
+function renderLaudos(){
+ const root=$('laudosGrid');
+ if(!root) return;
+ const st=processState();
+ const insp=st.inspecoes[0];
+ const cards=[
+  {
+   title:'Relatório de inspeção SST',
+   meta:insp?`${insp.numero||''} · ${V8Report.fmt(insp.dataVisita)}`:'Disponível após a inspeção',
+   ready:!!insp,
+   actions: insp
+    ? `<button class="outline" data-act="prev-insp">Prévia</button><button class="dark" data-act="pdf-insp">Gerar PDF</button>`
+    : `<button class="primary" data-act="go-insp">Ir para inspeção</button>`
+  },
+  {
+   title:'PGR / NR-1',
+   meta:st.cadastro?'Usa o cadastro do condomínio, setores, GHE e riscos':'Cadastre o condomínio e o inventário',
+   ready:st.cadastro,
+   actions: st.cadastro
+    ? `<button class="outline" data-act="prev-pgr">Prévia</button><button class="dark" data-act="pdf-pgr">Gerar PDF</button>`
+    : `<button class="primary" data-act="go-cad">Cadastrar condomínio</button>`
+  },
+  {title:'PCMSO', meta:'Módulo médico em preparação', ready:false, actions:'<button class="outline" disabled>Em breve</button>'},
+  {title:'LTCAT', meta:'Módulo previdenciário em preparação', ready:false, actions:'<button class="outline" disabled>Em breve</button>'}
+ ];
+ root.innerHTML=cards.map(c=>`<article class="laudo-card ${c.ready?'ready':''}"><span class="eyebrow">${c.ready?'PRONTO':'PENDENTE'}</span><h3>${c.title}</h3><p>${V8Report.esc(c.meta)}</p><div class="actions">${c.actions}</div></article>`).join('');
+ root.querySelector('[data-act="go-insp"]')?.addEventListener('click',()=>go('inspecao'));
+ root.querySelector('[data-act="go-cad"]')?.addEventListener('click',()=>go('empresa'));
+ root.querySelector('[data-act="prev-pgr"]')?.addEventListener('click',previewPgr);
+ root.querySelector('[data-act="pdf-pgr"]')?.addEventListener('click',()=>V8Report.print(collect()));
+ root.querySelector('[data-act="prev-insp"]')?.addEventListener('click',()=>emitInspecao('preview'));
+ root.querySelector('[data-act="pdf-insp"]')?.addEventListener('click',()=>emitInspecao('pdf'));
+}
+function emitInspecao(mode){
+ const d=V8Storage.inspections(project.id)[0];
+ if(!d) return alert('Realize a inspeção deste condomínio primeiro.');
+ go('inspecao');
+ const run=()=>{
+  const win=$('inspecaoFrame')?.contentWindow;
+  if(!win?.FFInspecao){ setTimeout(run,200); return; }
+  if(mode==='preview') win.FFInspecao.previewSaved(d.id);
+  else win.FFInspecao.printSaved(d.id);
+ };
+ setTimeout(run,250);
+}
 function closeModal(){$('modal').classList.add('hidden')}function closeReport(){$('reportModal').classList.add('hidden')}
 function options(list,key='nome'){return `<option value="">Selecione...</option>${list.map(x=>`<option>${V8Report.esc(x[key]||'')}</option>`).join('')}`}
 function openEntityModal(type,index=null){
@@ -68,8 +322,7 @@ function renderGhe(){entityList($('gheList'),project.ghe,'ghe',x=>`${V8Report.es
 function renderRiscos(){const root=$('riscosList');root.innerHTML=project.riscos.length?'':'<div class="notice">Nenhum risco cadastrado.</div>';project.riscos.forEach((r,i)=>{const score=Number(r.prob)*Number(r.sev),lvl=V8Report.level(score),cl=lvl==='Baixo'?'baixo':lvl==='Moderado'?'moderado':lvl==='Alto'?'alto':'critico';const d=document.createElement('div');d.className='risk-row';d.innerHTML=`<div><b>${V8Report.esc(r.perigo)}</b><br><span>${V8Report.esc(r.ghe||r.funcao||'-')}</span></div><div>${V8Report.esc(r.grupo)}</div><div>P ${r.prob} × S ${r.sev}</div><div class="risk-level ${cl}">${lvl}</div><div>${V8Report.esc(r.status||'Pendente')}</div><div class="entity-actions"><button class="outline">Editar</button><button class="danger">Excluir</button></div>`;const bs=d.querySelectorAll('button');bs[0].onclick=()=>openEntityModal('risco',i);bs[1].onclick=()=>{if(confirm('Excluir este risco?')){project.riscos.splice(i,1);renderAll()}};root.appendChild(d)})}
 function renderPlano(){const rows=project.riscos.filter(r=>r.acao);$('planoTable').innerHTML=rows.length?`<table class="table"><thead><tr><th>Risco</th><th>Nível</th><th>Ação</th><th>Responsável</th><th>Prazo</th><th>Status</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${V8Report.esc(r.perigo)}</td><td>${V8Report.level(Number(r.prob)*Number(r.sev))}</td><td>${V8Report.esc(r.acao)}</td><td>${V8Report.esc(r.responsavel||'-')}</td><td>${V8Report.fmt(r.prazo)}</td><td>${V8Report.esc(r.status||'Pendente')}</td></tr>`).join('')}</tbody></table>`:'<div class="notice">Cadastre ações nos riscos do inventário para formar o plano de ação.</div>'}
 function renderPgrSummary(){const p=collect(),high=p.riscos.filter(r=>Number(r.prob)*Number(r.sev)>=10).length;$('pgrSummary').innerHTML=`<div class="cards metrics" style="grid-template-columns:repeat(4,1fr)"><article><b>${p.setores.length}</b><span>Setores</span></article><article><b>${p.ghe.length}</b><span>GHEs</span></article><article><b>${p.riscos.length}</b><span>Riscos</span></article><article><b>${high}</b><span>Altos/críticos</span></article></div>`}
-function previewPgr(){const p=collect();if(!p.empresa.razaoSocial)return alert('Preencha os dados da empresa.');window._previewProject=p;$('reportPreview').innerHTML=V8Report.build(p);$('reportModal').classList.remove('hidden')}
-function renderProjects(){const q=($('searchProjects').value||'').toLowerCase(),root=$('projectsList'),list=V8Storage.list().filter(p=>(p.empresa?.razaoSocial||'').toLowerCase().includes(q));root.innerHTML=list.length?'':'<div class="notice">Nenhum projeto salvo.</div>';list.forEach(p=>{const d=document.createElement('div');d.className='entity-card';d.innerHTML=`<div class="entity-head"><div><div class="entity-title">${V8Report.esc(p.empresa?.razaoSocial||'Sem nome')}</div><div class="entity-meta">${V8Report.esc(p.empresa?.cnpj||'')} · ${p.riscos?.length||0} risco(s) · salvo ${V8Report.esc(p.salvoEm||'')}</div></div><div class="entity-actions"><button class="primary">Abrir</button><button class="dark">PGR</button><button class="danger">Excluir</button></div></div>`;const bs=d.querySelectorAll('button');bs[0].onclick=()=>{apply(p);openView('dashboard',document.querySelector('[data-view="dashboard"]'))};bs[1].onclick=()=>V8Report.print(p);bs[2].onclick=()=>{if(confirm('Excluir este projeto?')){V8Storage.remove(p.id);renderProjects()}};root.appendChild(d)})}
+function previewPgr(){const p=collect();if(!p.empresa.razaoSocial)return alert('Cadastre o condomínio primeiro.');window._previewProject=p;$('reportPreview').innerHTML=V8Report.build(p);$('reportModal').classList.remove('hidden')}
 function renderAcessos(){
  const s=FFAuth.session();
  const root=$('usersList');

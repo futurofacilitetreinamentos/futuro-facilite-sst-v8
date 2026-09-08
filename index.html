@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#075e45">
 <title>Futuro Facilite SST V8</title>
-<script>if(window.self!==window.top){location.replace(new URL('inspecao/index.html?v=8.4',location.href).href)}</script>
-<link rel="stylesheet" href="css/style.css?v=8.4">
-<link rel="stylesheet" href="css/report.css?v=8.4">
+<script>if(window.self!==window.top){location.replace(new URL('inspecao/index.html?v=8.5',location.href).href)}</script>
+<link rel="stylesheet" href="css/style.css?v=8.5">
+<link rel="stylesheet" href="css/report.css?v=8.5">
 </head>
 <body>
 <div id="loginScreen" class="login-screen">
@@ -45,18 +45,19 @@
       <div><strong>Futuro Facilite</strong><span>Gestão SST V8</span></div>
     </div>
     <nav id="menu">
-      <button data-view="dashboard" class="active">▦ Dashboard</button>
-      <button data-view="inspecao">☑ Checklist de Inspeção SST</button>
-      <button data-view="empresa">🏢 Empresa</button>
+      <button data-view="dashboard" class="active">▦ Atendimento</button>
+      <button data-view="empresa">🏢 Condomínio</button>
+      <button data-view="agenda">📅 Agenda</button>
+      <button data-view="inspecao">☑ Inspeção SST</button>
       <button data-view="setores">▤ Setores</button>
       <button data-view="funcoes">👷 Funções</button>
       <button data-view="ghe">◉ GHE</button>
       <button data-view="riscos">⚠ Inventário de riscos</button>
       <button data-view="plano">✓ Plano de ação</button>
       <button data-view="pgr">📄 PGR / NR-1</button>
+      <button data-view="laudos">📑 Laudos</button>
       <button data-view="pcmso">🩺 PCMSO</button>
       <button data-view="ltcat">📋 LTCAT</button>
-      <button data-view="projetos">💾 Projetos salvos</button>
       <button data-view="acessos">🔑 Minha conta</button>
     </nav>
     <div class="side-user">
@@ -69,28 +70,29 @@
 
   <main class="main">
     <header class="topbar">
-      <div><h1 id="pageTitle">Dashboard</h1><p id="projectLabel">Novo projeto SST</p></div>
+      <div><h1 id="pageTitle">Atendimento</h1><p id="projectLabel">Cadastre o condomínio para iniciar</p></div>
       <div class="top-actions">
-        <button class="outline" id="newProjectBtn">Novo projeto</button>
-        <button class="primary" id="saveProjectBtn">Salvar projeto</button>
+        <label class="condo-switch">Condomínio em atendimento
+          <select id="condoSelect"></select>
+        </label>
+        <button class="outline" id="newProjectBtn">Novo condomínio</button>
+        <button class="primary" id="saveProjectBtn">Salvar cadastro</button>
       </div>
     </header>
 
     <section id="view-dashboard" class="view active">
       <div class="hero">
-        <div><span class="eyebrow">GESTÃO INTEGRADA</span><h2>NR-1 / GRO + PGR</h2><p>Cadastre uma vez os dados da organização, ambientes, funções, GHEs e riscos. O sistema reutiliza essas informações no inventário, plano de ação e PGR.</p></div>
-        <div class="hero-badge">V8<br><span>Projeto independente</span></div>
+        <div><span class="eyebrow">ORDEM DE ATENDIMENTO</span><h2>Do cadastro ao laudo</h2><p>Cadastre o condomínio uma vez. Em seguida agende a inspeção, execute o checklist e emita os laudos com os mesmos dados — sem redigitar nome, CNPJ, endereço ou síndico.</p></div>
+        <div class="hero-badge">V8<br><span>Fluxo do condomínio</span></div>
       </div>
+      <div id="pipeline" class="pipeline"></div>
+      <div id="nextAction" class="next-action"></div>
       <div class="cards metrics">
         <article><b id="mSetores">0</b><span>Setores</span></article>
         <article><b id="mFuncoes">0</b><span>Funções</span></article>
         <article><b id="mGhe">0</b><span>GHEs</span></article>
         <article><b id="mRiscos">0</b><span>Riscos</span></article>
         <article><b id="mAltos">0</b><span>Altos/críticos</span></article>
-      </div>
-      <div class="cards two">
-        <article class="panel"><h3>Andamento do projeto</h3><div id="progressList"></div></article>
-        <article class="panel"><h3>Próximos módulos</h3><div class="roadmap"><span class="done">NR-1 / GRO</span><span class="done">PGR</span><span class="done">Checklist de Inspeção SST</span><span>PCMSO</span><span>LTCAT</span><span>eSocial SST</span></div></article>
       </div>
     </section>
 
@@ -99,18 +101,19 @@
     </section>
 
     <section id="view-empresa" class="view">
+      <div class="notice">Este é o cadastro único do condomínio. Agenda, inspeção, PGR e laudos usam estes dados automaticamente.</div>
       <div class="panel">
-        <div class="panel-head"><div><span class="eyebrow">CADASTRO CENTRAL</span><h2>Dados da organização</h2></div></div>
+        <div class="panel-head"><div><span class="eyebrow">CADASTRO CENTRAL</span><h2>Dados do condomínio</h2></div></div>
         <div class="form-grid two">
-          <label>Razão social<input id="razaoSocial"></label>
+          <label>Nome do condomínio / razão social<input id="razaoSocial"></label>
           <label>Nome fantasia<input id="nomeFantasia"></label>
           <label>CNPJ<input id="cnpj" inputmode="numeric" maxlength="18" placeholder="00.000.000/0000-00"></label>
           <label>CNAE principal<input id="cnae"></label>
           <label>Grau de risco<input id="grauRisco" type="number" min="1" max="4"></label>
           <label>Nº de trabalhadores<input id="numTrabalhadores" type="number" min="0"></label>
           <label class="span2">Endereço<input id="endereco"></label>
-          <label>Responsável da empresa<input id="responsavelEmpresa"></label>
-          <label>Contato<input id="contatoEmpresa"></label>
+          <label>Síndico / responsável<input id="responsavelEmpresa"></label>
+          <label>Telefone<input id="contatoEmpresa"></label>
           <label>E-mail<input id="emailEmpresa" type="email"></label>
           <label>Data de elaboração<input id="dataElaboracao" type="date"></label>
           <label class="span2">Descrição das atividades<textarea id="atividadeEmpresa"></textarea></label>
@@ -126,6 +129,24 @@
           <label>Engenheiro de Segurança<input id="engSeguranca"></label>
           <label>CREA<input id="creaEng"></label>
         </div>
+      </div>
+    </section>
+
+    <section id="view-agenda" class="view">
+      <div class="panel">
+        <div class="panel-head"><div><span class="eyebrow">PASSO 2</span><h2>Agendar inspeção</h2></div></div>
+        <div class="notice" id="agendaCondoNote">Selecione ou cadastre um condomínio para agendar.</div>
+        <div class="form-grid two">
+          <label>Data da inspeção<input id="agData" type="date"></label>
+          <label>Horário<input id="agHora" type="time"></label>
+          <label>Técnico responsável<input id="agTecnico"></label>
+          <label class="span2">Observação<textarea id="agObs" placeholder="Acesso, contato no local, pontos de atenção..."></textarea></label>
+        </div>
+        <div class="actions" style="margin-top:12px"><button class="primary" id="agendarBtn" type="button">Agendar inspeção</button></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div><span class="eyebrow">CALENDÁRIO</span><h2>Inspeções deste condomínio</h2></div></div>
+        <div id="agendaList"></div>
       </div>
     </section>
 
@@ -218,11 +239,11 @@
       </div>
     </section>
 
-    <section id="view-projetos" class="view">
+    <section id="view-laudos" class="view">
       <div class="panel">
-        <div class="panel-head"><div><span class="eyebrow">ARQUIVO</span><h2>Projetos salvos neste aparelho</h2></div></div>
-        <input id="searchProjects" placeholder="Pesquisar empresa...">
-        <div id="projectsList"></div>
+        <div class="panel-head"><div><span class="eyebrow">PASSO 4</span><h2>Emissão de laudos</h2></div></div>
+        <div class="notice">Os documentos saem com os dados já cadastrados do condomínio e com o resultado da inspeção, sem novo preenchimento de identificação.</div>
+        <div id="laudosGrid" class="laudo-grid"></div>
       </div>
     </section>
   </main>
@@ -231,9 +252,9 @@
 <div id="modal" class="modal-backdrop hidden"><div class="modal"><div class="modal-head"><h2 id="modalTitle">Cadastro</h2><button id="closeModal" class="danger">Fechar</button></div><div id="modalBody"></div></div></div>
 <div id="reportModal" class="modal-backdrop hidden"><div class="modal report-modal"><div class="modal-head"><h2>Prévia do PGR</h2><div><button id="printFromPreview" class="dark">Imprimir / PDF</button><button id="closeReport" class="danger">Fechar</button></div></div><div id="reportPreview" class="report-preview"></div></div></div>
 
-<script src="js/auth.js?v=8.4"></script>
-<script src="js/storage.js?v=8.4"></script>
-<script src="js/report.js?v=8.4"></script>
-<script src="js/app.js?v=8.4"></script>
+<script src="js/auth.js?v=8.5"></script>
+<script src="js/storage.js?v=8.5"></script>
+<script src="js/report.js?v=8.5"></script>
+<script src="js/app.js?v=8.5"></script>
 </body>
 </html>

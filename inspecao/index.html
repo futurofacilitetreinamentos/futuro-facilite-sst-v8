@@ -6,8 +6,8 @@
   <meta name="theme-color" content="#075e45">
   <title>Futuro Facilite SST — V7.1</title>
   <script>if(window.self!==window.top)document.documentElement.classList.add('embedded')</script>
-  <link rel="stylesheet" href="css/style.css?v=8.4">
-  <link rel="stylesheet" href="css/report.css?v=8.4">
+  <link rel="stylesheet" href="css/style.css?v=8.5">
+  <link rel="stylesheet" href="css/report.css?v=8.5">
 </head>
 <body>
 <header class="app-header">
@@ -34,6 +34,10 @@
     Você está editando um relatório salvo. Após as correções, toque em <b>Salvar alterações</b>.
   </div>
 
+  <div id="cadastroBanner" class="cadastro-banner hidden">
+    Dados do condomínio carregados do cadastro. Preencha só o que for da vistoria.
+  </div>
+
   <section class="card">
     <div class="section-head">
       <div><span class="eyebrow">RELATÓRIO</span><h2>Identificação da inspeção</h2></div>
@@ -43,11 +47,11 @@
       <label>Condomínio<input id="condominio" placeholder="Nome do condomínio"></label>
       <label>CNPJ<input id="cnpj" placeholder="00.000.000/0000-00" inputmode="numeric" maxlength="18"></label>
       <label class="span2">Endereço<input id="endereco"></label>
-      <label>Síndica / responsável<input id="sindica"></label>
+      <label>Síndico / responsável<input id="sindica"></label>
       <label>Telefone do condomínio<input id="telefone"></label>
       <label>E-mail do condomínio<input id="emailCondominio" type="email"></label>
       <label>Data da inspeção<input id="dataVisita" type="date"></label>
-<label>Técnico responsável<input id="tecnico" value="Francson Menezes Alves"></label>
+      <label>Técnico responsável<input id="tecnico"></label>
 <label class="span2">Objetivo<textarea id="objetivo">Avaliar as condições de segurança e saúde no ambiente de trabalho do condomínio, identificar perigos e recomendar medidas preventivas e corretivas.</textarea></label>
       <label>Foto de capa
         <input id="fotoCapaInput" type="file" accept="image/*">
@@ -123,9 +127,9 @@
   </div>
 </div>
 
-<script src="../js/auth.js?v=8.4"></script>
-<script src="js/storage.js?v=8.4"></script>
-<script src="js/report.js?v=8.4"></script>
-<script src="js/app.js?v=8.4"></script>
+<script src="../js/auth.js?v=8.5"></script>
+<script src="js/storage.js?v=8.5"></script>
+<script src="js/report.js?v=8.5"></script>
+<script src="js/app.js?v=8.5"></script>
 </body>
 </html>
