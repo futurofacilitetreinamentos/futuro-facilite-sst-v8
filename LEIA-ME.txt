@@ -5,6 +5,7 @@ OBJETIVO
 Sistema-base para cadastro central de empresas e gerenciamento integrado de SST.
 
 MÓDULOS FUNCIONAIS NESTA VERSÃO
+- Login de acesso (técnico e administrador)
 - Dashboard
 - Checklist de Inspeção SST (módulo incorporado da V7.1)
 - Cadastro da organização

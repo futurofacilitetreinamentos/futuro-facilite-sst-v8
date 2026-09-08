@@ -10,9 +10,26 @@ function init(){
  $('addSetor').onclick=()=>openEntityModal('setor');$('addFuncao').onclick=()=>openEntityModal('funcao');$('addGhe').onclick=()=>openEntityModal('ghe');$('addRisco').onclick=()=>openEntityModal('risco');
  $('closeModal').onclick=closeModal;$('previewPgr').onclick=previewPgr;$('printPgr').onclick=()=>V8Report.print(collect());$('closeReport').onclick=closeReport;$('printFromPreview').onclick=()=>V8Report.print(window._previewProject||collect());
  $('searchProjects').oninput=renderProjects;$('cnpj').oninput=e=>e.target.value=formatCNPJ(e.target.value);
+ $('addUserBtn').onclick=addAccessUser;$('changePassBtn').onclick=changeMyPassword;
  renderAll();
 }
-function openView(v,btn){document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));$('view-'+v).classList.add('active');document.querySelectorAll('#menu button').forEach(x=>x.classList.remove('active'));btn?.classList.add('active');const names={dashboard:'Dashboard',inspecao:'Checklist de Inspeção SST',empresa:'Empresa',setores:'Setores',funcoes:'Funções',ghe:'GHE',riscos:'Inventário de riscos',plano:'Plano de ação',pgr:'PGR / NR-1',pcmso:'PCMSO',ltcat:'LTCAT',projetos:'Projetos salvos'};$('pageTitle').textContent=names[v]||v;document.body.classList.toggle('inspecao-open',v==='inspecao');if(v==='plano')renderPlano();if(v==='pgr')renderPgrSummary();if(v==='projetos')renderProjects()}
+function openView(v,btn){
+ document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));
+ $('view-'+v).classList.add('active');
+ document.querySelectorAll('#menu button').forEach(x=>x.classList.remove('active'));
+ btn?.classList.add('active');
+ const names={dashboard:'Dashboard',inspecao:'Checklist de Inspeção SST',empresa:'Empresa',setores:'Setores',funcoes:'Funções',ghe:'GHE',riscos:'Inventário de riscos',plano:'Plano de ação',pgr:'PGR / NR-1',pcmso:'PCMSO',ltcat:'LTCAT',projetos:'Projetos salvos',acessos:'Minha conta'};
+ $('pageTitle').textContent=names[v]||v;
+ document.body.classList.toggle('inspecao-open',v==='inspecao');
+ if(v==='inspecao'){
+  const f=$('inspecaoFrame');
+  if(f && f.dataset.loaded!=='1'){ f.src='inspecao/index.html?v=8.2'; f.dataset.loaded='1'; }
+ }
+ if(v==='plano')renderPlano();
+ if(v==='pgr')renderPgrSummary();
+ if(v==='projetos')renderProjects();
+ if(v==='acessos')renderAcessos();
+}
 function formatCNPJ(value){const d=String(value||'').replace(/\D/g,'').slice(0,14);if(d.length<=2)return d;if(d.length<=5)return d.slice(0,2)+'.'+d.slice(2);if(d.length<=8)return d.slice(0,2)+'.'+d.slice(2,5)+'.'+d.slice(5);if(d.length<=12)return d.slice(0,2)+'.'+d.slice(2,5)+'.'+d.slice(5,8)+'/'+d.slice(8);return d.slice(0,2)+'.'+d.slice(2,5)+'.'+d.slice(5,8)+'/'+d.slice(8,12)+'-'+d.slice(12)}
 function collect(){empFields.forEach(f=>project.empresa[f]=$(f).value);project.salvoEm=new Date().toLocaleString('pt-BR');return JSON.parse(JSON.stringify(project))}
 function apply(p){project=JSON.parse(JSON.stringify(p));empFields.forEach(f=>$(f).value=project.empresa?.[f]||'');renderAll();$('projectLabel').textContent=project.empresa?.razaoSocial||'Projeto SST'}
@@ -52,4 +69,27 @@ function renderPlano(){const rows=project.riscos.filter(r=>r.acao);$('planoTable
 function renderPgrSummary(){const p=collect(),high=p.riscos.filter(r=>Number(r.prob)*Number(r.sev)>=10).length;$('pgrSummary').innerHTML=`<div class="cards metrics" style="grid-template-columns:repeat(4,1fr)"><article><b>${p.setores.length}</b><span>Setores</span></article><article><b>${p.ghe.length}</b><span>GHEs</span></article><article><b>${p.riscos.length}</b><span>Riscos</span></article><article><b>${high}</b><span>Altos/críticos</span></article></div>`}
 function previewPgr(){const p=collect();if(!p.empresa.razaoSocial)return alert('Preencha os dados da empresa.');window._previewProject=p;$('reportPreview').innerHTML=V8Report.build(p);$('reportModal').classList.remove('hidden')}
 function renderProjects(){const q=($('searchProjects').value||'').toLowerCase(),root=$('projectsList'),list=V8Storage.list().filter(p=>(p.empresa?.razaoSocial||'').toLowerCase().includes(q));root.innerHTML=list.length?'':'<div class="notice">Nenhum projeto salvo.</div>';list.forEach(p=>{const d=document.createElement('div');d.className='entity-card';d.innerHTML=`<div class="entity-head"><div><div class="entity-title">${V8Report.esc(p.empresa?.razaoSocial||'Sem nome')}</div><div class="entity-meta">${V8Report.esc(p.empresa?.cnpj||'')} · ${p.riscos?.length||0} risco(s) · salvo ${V8Report.esc(p.salvoEm||'')}</div></div><div class="entity-actions"><button class="primary">Abrir</button><button class="dark">PGR</button><button class="danger">Excluir</button></div></div>`;const bs=d.querySelectorAll('button');bs[0].onclick=()=>{apply(p);openView('dashboard',document.querySelector('[data-view="dashboard"]'))};bs[1].onclick=()=>V8Report.print(p);bs[2].onclick=()=>{if(confirm('Excluir este projeto?')){V8Storage.remove(p.id);renderProjects()}};root.appendChild(d)})}
+function renderAcessos(){
+ const s=FFAuth.session();
+ const root=$('usersList');
+ if(!root) return;
+ if(!s || s.role!=='admin'){ root.innerHTML=''; return; }
+ const list=FFAuth.allUsers();
+ root.innerHTML=list.map(u=>`<div class="entity-card"><div class="entity-head"><div><div class="entity-title">${V8Report.esc(u.name)}</div><div class="entity-meta">${V8Report.esc(u.user)} · ${u.role==='admin'?'Administrador':'Técnico'}${u.extra?'':' · usuário padrão'}</div></div>${u.extra?`<div class="entity-actions"><button class="danger" data-del="${V8Report.esc(u.user)}">Excluir</button></div>`:''}</div></div>`).join('');
+ root.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{ if(!confirm('Excluir este acesso?'))return; const r=FFAuth.removeUser(b.dataset.del); if(!r.ok)return alert(r.error); renderAcessos(); });
+}
+async function addAccessUser(){
+ const res=await FFAuth.addUser({user:$('newUserLogin').value,name:$('newUserName').value,pass:$('newUserPass').value,role:$('newUserRole').value});
+ if(!res.ok)return alert(res.error);
+ $('newUserLogin').value=$('newUserName').value=$('newUserPass').value='';
+ renderAcessos();
+ alert('Acesso cadastrado.');
+}
+async function changeMyPassword(){
+ const s=FFAuth.session(); if(!s)return;
+ const res=await FFAuth.changePassword(s.user,$('curPass').value,$('newPass').value);
+ if(!res.ok)return alert(res.error);
+ $('curPass').value=$('newPass').value='';
+ alert('Senha atualizada.');
+}
 document.addEventListener('DOMContentLoaded',init);
