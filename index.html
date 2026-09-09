@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#075e45">
 <title>Futuro Facilite SST V8</title>
-<script>if(window.self!==window.top){location.replace(new URL('inspecao/index.html?v=8.14',location.href).href)}</script>
-<link rel="stylesheet" href="css/style.css?v=8.14">
-<link rel="stylesheet" href="css/report.css?v=8.14">
+<script>if(window.self!==window.top){location.replace(new URL('inspecao/index.html?v=8.15',location.href).href)}</script>
+<link rel="stylesheet" href="css/style.css?v=8.15">
+<link rel="stylesheet" href="css/report.css?v=8.15">
 </head>
 <body>
 <div id="loginScreen" class="login-screen">
@@ -269,11 +269,14 @@
     </section>
 
     <section id="view-ltcat" class="view">
-      <div class="module-coming">
-        <div class="big-icon">📋</div><h2>LTCAT — módulo previdenciário</h2>
-        <p>Estrutura reservada para agentes nocivos, avaliações quantitativas, metodologia, EPC/EPI, exposição por GHE/função e conclusão técnica, com validação pelo profissional legalmente habilitado.</p>
-        <div class="coming-grid"><span>Agentes nocivos</span><span>Medições</span><span>Metodologia</span><span>EPC / EPI</span><span>Conclusão</span><span>Assinatura técnica</span></div>
-        <b>Próxima etapa da V8</b>
+      <div class="panel">
+        <div class="panel-head"><div><span class="eyebrow">PREVIDENCIÁRIO</span><h2>LTCAT</h2></div><div class="actions"><button class="outline" type="button" id="previewLtcat">Prévia</button><button class="dark" type="button" id="printLtcat">Gerar PDF</button></div></div>
+        <div class="notice">O LTCAT usa o inventário do PGR e o engenheiro de segurança selecionado no condomínio. A conclusão previdenciária deve ser validada pelo profissional habilitado antes da entrega.</div>
+        <div id="ltcatSummary"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div><span class="eyebrow">AGENTES</span><h2>Exposição por GHE / função</h2></div></div>
+        <div id="ltcatAgentes"></div>
       </div>
     </section>
 
@@ -317,11 +320,12 @@
 <div id="modal" class="modal-backdrop hidden"><div class="modal"><div class="modal-head"><h2 id="modalTitle">Cadastro</h2><button id="closeModal" class="danger">Fechar</button></div><div id="modalBody"></div></div></div>
 <div id="reportModal" class="modal-backdrop hidden"><div class="modal report-modal"><div class="modal-head"><h2 id="reportModalTitle">Prévia do documento</h2><div><button id="printFromPreview" class="dark">Imprimir / PDF</button><button id="closeReport" class="danger">Fechar</button></div></div><div id="reportPreview" class="report-preview"></div></div></div>
 
-<script src="js/auth.js?v=8.14"></script>
-<script src="js/storage.js?v=8.14"></script>
-<script src="js/drps-data.js?v=8.14"></script>
-<script src="js/pcmso.js?v=8.14"></script>
-<script src="js/report.js?v=8.14"></script>
-<script src="js/app.js?v=8.14"></script>
+<script src="js/auth.js?v=8.15"></script>
+<script src="js/storage.js?v=8.15"></script>
+<script src="js/drps-data.js?v=8.15"></script>
+<script src="js/pcmso.js?v=8.15"></script>
+<script src="js/ltcat.js?v=8.15"></script>
+<script src="js/report.js?v=8.15"></script>
+<script src="js/app.js?v=8.15"></script>
 </body>
 </html>

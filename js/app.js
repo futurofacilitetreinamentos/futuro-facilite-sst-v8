@@ -2,7 +2,7 @@
 let project=V8Storage.blank();
 const $=id=>document.getElementById(id);
 const empFields=['razaoSocial','nomeFantasia','cnpj','cnae','grauRisco','numTrabalhadores','endereco','responsavelEmpresa','contatoEmpresa','emailEmpresa','dataElaboracao','atividadeEmpresa','respSst','funcaoRespSst','regSst','medicoTrabalho','crmMedico','engSeguranca','creaEng','respSstId','medicoId','engId'];
-const needsCadastro=['agenda','inspecao','setores','funcoes','ghe','riscos','plano','pgr','nr1','laudos','pcmso'];
+const needsCadastro=['agenda','inspecao','setores','funcoes','ghe','riscos','plano','pgr','nr1','laudos','pcmso','ltcat'];
 
 function init(){
  $('dataElaboracao').value=new Date().toISOString().slice(0,10);
@@ -17,7 +17,7 @@ function init(){
   const tipo=inp.closest('label')?.querySelector('[data-pick]')?.dataset.pick;
   if(tipo) openPickEquipe(tipo);
  }));
- $('closeModal').onclick=closeModal;$('previewPgr').onclick=previewPgr;$('printPgr').onclick=()=>V8Report.print(collect());$('previewPcmso')?.addEventListener('click',previewPcmso);$('printPcmso')?.addEventListener('click',()=>printPcmsoDoc());$('closeReport').onclick=closeReport;$('printFromPreview').onclick=printFromPreview;
+ $('closeModal').onclick=closeModal;$('previewPgr').onclick=previewPgr;$('printPgr').onclick=()=>V8Report.print(collect());$('previewPcmso')?.addEventListener('click',previewPcmso);$('printPcmso')?.addEventListener('click',()=>printPcmsoDoc());$('previewLtcat')?.addEventListener('click',previewLtcat);$('printLtcat')?.addEventListener('click',()=>printLtcatDoc());$('closeReport').onclick=closeReport;$('printFromPreview').onclick=printFromPreview;
  $('cnpj').oninput=e=>e.target.value=formatCNPJ(e.target.value);
  $('addUserBtn').onclick=addAccessUser;$('changePassBtn').onclick=changeMyPassword;
  $('newUserCpf')?.addEventListener('input',e=>e.target.value=FFAuth.formatCPF(e.target.value));
@@ -59,6 +59,7 @@ function openView(v,btn){
  if(v==='plano') renderPlano();
  if(v==='pgr') renderPgrSummary();
  if(v==='pcmso') renderPcmso();
+ if(v==='ltcat') renderLtcat();
  if(v==='nr1') renderNr1();
  if(v==='laudos') renderLaudos();
  if(v==='acessos') renderAcessos();
@@ -180,7 +181,7 @@ function pushInspectionContext(){
 function openInspecao(){
  const f=$('inspecaoFrame');
  if(!f) return;
- const src=new URL('inspecao/index.html?v=8.14', document.baseURI).href;
+ const src=new URL('inspecao/index.html?v=8.15', document.baseURI).href;
  if(f.dataset.loaded!=='1'){
   f.onload=()=>pushInspectionContext();
   f.src=src;
@@ -296,7 +297,14 @@ function renderLaudos(){
     ? `<button class="outline" data-act="prev-pcmso">Prévia</button><button class="dark" data-act="pdf-pcmso">Gerar PDF</button>`
     : `<button class="primary" data-act="go-cad">Cadastrar condomínio</button>`
   },
-  {title:'LTCAT', meta:'Módulo previdenciário em preparação', ready:false, actions:'<button class="outline" disabled>Em breve</button>'}
+  {
+   title:'LTCAT',
+   meta:st.cadastro?(project.empresa?.engSeguranca?'Usa o engenheiro do condomínio e os riscos do PGR':'Selecione o engenheiro no cadastro do condomínio'):'Cadastre o condomínio',
+   ready:st.cadastro && !!project.empresa?.engSeguranca,
+   actions: st.cadastro
+    ? `<button class="outline" data-act="prev-ltcat">Prévia</button><button class="dark" data-act="pdf-ltcat">Gerar PDF</button>`
+    : `<button class="primary" data-act="go-cad">Cadastrar condomínio</button>`
+  }
  ];
  root.innerHTML=cards.map(c=>`<article class="laudo-card ${c.ready?'ready':''}"><span class="eyebrow">${c.ready?'PRONTO':'PENDENTE'}</span><h3>${c.title}</h3><p>${V8Report.esc(c.meta)}</p><div class="actions">${c.actions}</div></article>`).join('');
  root.querySelector('[data-act="go-insp"]')?.addEventListener('click',()=>go('inspecao'));
@@ -305,6 +313,8 @@ function renderLaudos(){
  root.querySelector('[data-act="pdf-pgr"]')?.addEventListener('click',()=>V8Report.print(collect()));
  root.querySelector('[data-act="prev-pcmso"]')?.addEventListener('click',previewPcmso);
  root.querySelector('[data-act="pdf-pcmso"]')?.addEventListener('click',()=>printPcmsoDoc());
+ root.querySelector('[data-act="prev-ltcat"]')?.addEventListener('click',previewLtcat);
+ root.querySelector('[data-act="pdf-ltcat"]')?.addEventListener('click',()=>printLtcatDoc());
  root.querySelector('[data-act="prev-insp"]')?.addEventListener('click',()=>emitInspecao('preview'));
  root.querySelector('[data-act="pdf-insp"]')?.addEventListener('click',()=>emitInspecao('pdf'));
 }
@@ -505,7 +515,38 @@ function printPcmsoDoc(){
 function printFromPreview(){
  const p=window._previewProject||collect();
  if(window._previewKind==='pcmso') V8Report.printPcmso(p);
+ else if(window._previewKind==='ltcat') V8Report.printLtcat(p);
  else V8Report.print(p);
+}
+function previewLtcat(){
+ const p=collect();
+ if(!p.empresa.razaoSocial)return alert('Cadastre o condomínio primeiro.');
+ if(!p.empresa.engSeguranca)return alert('Selecione o Engenheiro de Segurança no cadastro do condomínio.');
+ window._previewKind='ltcat';window._previewProject=p;
+ if($('reportModalTitle'))$('reportModalTitle').textContent='Prévia do LTCAT';
+ $('reportPreview').innerHTML=V8Report.buildLtcat(p);$('reportModal').classList.remove('hidden');
+}
+function printLtcatDoc(){
+ const p=collect();
+ if(!p.empresa.razaoSocial)return alert('Cadastre o condomínio primeiro.');
+ if(!p.empresa.engSeguranca)return alert('Selecione o Engenheiro de Segurança no cadastro do condomínio.');
+ V8Report.printLtcat(p);
+}
+function renderLtcat(){
+ const p=collect();
+ const plan=LTCATData.plan(p);
+ const eng=plan.eng||{};
+ const sum=$('ltcatSummary');
+ if(sum){
+  const okEng=!!eng.nome;
+  sum.innerHTML=`<div class="cards metrics" style="grid-template-columns:repeat(4,1fr)"><article><b>${(plan.agentes||[]).length}</b><span>Agentes destacados</span></article><article><b>${(p.riscos||[]).length}</b><span>Riscos do PGR</span></article><article><b>${(p.ghe||[]).length}</b><span>GHEs</span></article><article><b>${okEng?'Sim':'Não'}</b><span>Engenheiro definido</span></article></div>
+  <div class="notice" style="margin-top:12px">${okEng?`Responsável técnico: <b>${V8Report.esc(eng.nome)}</b>${eng.crea?' · CREA '+V8Report.esc(eng.crea):''}.`:'Selecione o engenheiro no cadastro do condomínio (seta em Engenheiro de Segurança).'} ${(p.riscos||[]).length?'A conclusão previdenciária parte do inventário qualitativo.':'Cadastre o inventário de riscos para fundamentar o laudo.'}</div>
+  <div class="notice">${V8Report.esc(plan.conclusao)}</div>`;
+ }
+ const root=$('ltcatAgentes');
+ if(!root) return;
+ if(!(plan.agentes||[]).length){ root.innerHTML='<div class="notice">Nenhum agente físico, químico ou biológico destacado. Riscos ergonômicos, de acidente e psicossociais ficam no PGR, sem enquadramento no Anexo IV.</div>'; return; }
+ root.innerHTML=plan.agentes.map(a=>`<div class="entity-card"><div class="entity-title">${V8Report.esc(a.agente)} · ${V8Report.esc(a.ghe)}</div><div class="entity-meta">${V8Report.esc(a.grupo)} · Fonte: ${V8Report.esc(a.fonte)}</div><div class="entity-meta" style="margin-top:6px">${V8Report.esc(a.exposicao)}</div><div class="entity-meta">Controles: ${V8Report.esc(a.controles)}</div></div>`).join('');
 }
 function renderPcmso(){
  const p=collect();
