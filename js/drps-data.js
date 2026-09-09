@@ -122,5 +122,73 @@ const DRPSData=(()=>{
   });
   return {n:list.length,topicos,porSetor,altos:topicos.filter(t=>t.gravidadeN>=3)};
  }
- return {SCALE,TOPICS,QUESTIONS:Q,corrected,gravidade,topicAvg,bundle,FONTES,AGRAVOS};
+ const PUBLIC_BASE='https://futurofacilitetreinamentos.github.io/futuro-facilite-sst-v8/';
+ function publicBase(){
+  try{
+   if(!/^https?:$/.test(location.protocol)) return PUBLIC_BASE;
+   if(!location.hostname || location.hostname==='localhost' || location.hostname==='127.0.0.1') return PUBLIC_BASE;
+   let path=location.pathname.replace(/\/[^/]+\.[^/]+$/,'/');
+   if(!path.endsWith('/')) path+='/';
+   if(path.length<2) return PUBLIC_BASE;
+   return location.origin+path;
+  }catch(e){ return PUBLIC_BASE; }
+ }
+ function b64url(str){
+  return btoa(unescape(encodeURIComponent(str))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+ }
+ function unb64url(s){
+  try{
+   s=String(s||'').replace(/-/g,'+').replace(/_/g,'/');
+   while(s.length%4) s+='=';
+   return decodeURIComponent(escape(atob(s)));
+  }catch(e){ return ''; }
+ }
+ function encodeReply(rec){
+  const digits=Q.map(q=>String(Number(rec.answers?.[q.n])||0)).join('');
+  return b64url(JSON.stringify({
+   t:rec.token||'',
+   f:rec.funcao||'',
+   s:rec.setor||'',
+   a:digits,
+   ts:rec.ts||new Date().toISOString(),
+   n:rec.condominio||''
+  }));
+ }
+ function decodeReply(payload){
+  const raw=unb64url(payload);
+  if(!raw) return null;
+  try{
+   const o=JSON.parse(raw);
+   if(!o || !o.t || !o.a) return null;
+   const answers={};
+   Q.forEach((q,i)=>{ const v=Number(String(o.a)[i]); if(v>=1&&v<=5) answers[q.n]=v; });
+   return {
+    id:'imp_'+String(o.ts||'')+'_'+(o.t||''),
+    token:o.t,
+    condominioId:'',
+    condominio:o.n||'',
+    funcao:o.f||'',
+    setor:o.s||'',
+    answers,
+    ts:o.ts||new Date().toISOString()
+   };
+  }catch(e){ return null; }
+ }
+ function formUrl(token,nome){
+  const u=new URL('drps.html', publicBase());
+  u.searchParams.set('c', token||'');
+  if(nome) u.searchParams.set('n', nome);
+  return u.href;
+ }
+ function ingestUrl(rec){
+  const u=new URL('drps.html', publicBase());
+  u.searchParams.set('save', encodeReply(rec));
+  return u.href;
+ }
+ function nColabs(p){
+  const n=Number(p?.empresa?.numTrabalhadores);
+  if(n>0) return n;
+  return (p?.funcoes||[]).reduce((s,f)=>s+(Number(f.quantidade)||0),0);
+ }
+ return {SCALE,TOPICS,QUESTIONS:Q,corrected,gravidade,topicAvg,bundle,FONTES,AGRAVOS,PUBLIC_BASE,publicBase,encodeReply,decodeReply,formUrl,ingestUrl,nColabs};
 })();

@@ -24,8 +24,11 @@ function init(){
  $('agendarBtn')?.addEventListener('click',agendarInspecao);
  $('condoSelect')?.addEventListener('change',switchCondominio);
  $('copyDrpsLink')?.addEventListener('click',copyDrpsLink);
- $('openDrpsLink')?.addEventListener('click',()=>window.open(drpsUrl(),'_blank'));
+ $('sendDrpsWhatsApp')?.addEventListener('click',()=>sendDrpsWhatsApp(project));
+ $('openDrpsLink')?.addEventListener('click',()=>window.open(drpsUrlFor(project),'_blank'));
  $('exportDrpsCsv')?.addEventListener('click',exportDrpsCsv);
+ $('importDrpsBtn')?.addEventListener('click',importDrpsPasted);
+ $('drpsCondoLinks')?.addEventListener('click',onDrpsCondoLinksClick);
  const saved=V8Storage.ativo();
  seedEquipe();
  if(saved) apply(saved,true);
@@ -568,15 +571,130 @@ function renderPcmso(){
   return `<div class="entity-card"><div class="entity-title">${V8Report.esc(f.funcao)}${f.qtd?' · '+V8Report.esc(f.qtd)+' trabalhador(es)':''}</div><div class="entity-meta">${V8Report.esc(f.setor||'')} · Riscos: ${riscos}</div><table class="table" style="margin-top:8px"><thead><tr><th>Exame</th><th>Tipos</th><th>Periodicidade</th><th>Indicador</th></tr></thead><tbody>${rows}</tbody></table></div>`;
  }).join('');
 }
-function drpsUrl(){
- V8Storage.ensureDrpsToken(project);
- return new URL('drps.html?c='+encodeURIComponent(project.drpsToken), document.baseURI).href;
+function drpsUrlFor(p){
+ if(!p) return '';
+ V8Storage.ensureDrpsToken(p);
+ return DRPSData.formUrl(p.drpsToken, p.empresa?.razaoSocial||'');
 }
+function nColabs(p){ return DRPSData.nColabs(p); }
+function phoneWa(phone){
+ let d=String(phone||'').replace(/\D/g,'');
+ if(d.length===10 || d.length===11) d='55'+d;
+ return d.length>=12 ? d : '';
+}
+function drpsMessage(p){
+ const n=nColabs(p);
+ const nome=p.empresa?.razaoSocial||'condomínio';
+ const url=drpsUrlFor(p);
+ return `DRPS / NR-1 — exclusivo do condomínio ${nome}
+
+Prezados colaboradores,
+
+Este formulário é somente deste condomínio${n?` (${n} trabalhador(es))`:''}. Cada pessoa responde uma vez, no celular, de forma confidencial (sem nome).
+
+Não encaminhem este link para outro condomínio.
+
+${url}`;
+}
+function whatsAppSendUrl(p){
+ const n=phoneWa(p.empresa?.contatoEmpresa);
+ return `https://wa.me/${n}?text=${encodeURIComponent(drpsMessage(p))}`;
+}
+function sendDrpsWhatsApp(p){
+ if(!p?.empresa?.razaoSocial) return alert('Salve o cadastro do condomínio antes de enviar o link.');
+ window.open(whatsAppSendUrl(p),'_blank');
+}
+async function copyText(text, okMsg){
+ try{ await navigator.clipboard.writeText(text); alert(okMsg||'Copiado.'); }
+ catch(e){
+  const ta=document.createElement('textarea');
+  ta.value=text; document.body.appendChild(ta); ta.select();
+  document.execCommand('copy'); ta.remove();
+  alert(okMsg||'Copiado.');
+ }
+}
+function persistCondoToken(p, force){
+ if(!p) return;
+ const had=!!p.drpsToken;
+ V8Storage.ensureDrpsToken(p);
+ if(!p.empresa?.razaoSocial) return;
+ if(force || !had) V8Storage.save(p, p.id===project.id ? undefined : {ativo:false});
+}
+function ingestDrpsRecord(rec){
+ if(!rec) return {ok:false, error:'Comprovante inválido.'};
+ const condo=V8Storage.byDrpsToken(rec.token);
+ rec.condominioId=condo?.id||rec.condominioId||'';
+ rec.condominio=condo?.empresa?.razaoSocial||rec.condominio||'';
+ const all=V8Storage.drpsList();
+ const dup=all.some(x=>x.id===rec.id || (x.token===rec.token && x.ts===rec.ts && x.funcao===rec.funcao && x.setor===rec.setor));
+ if(!dup) V8Storage.saveDrps(rec);
+ return {ok:true, condo, dup};
+}
+function importDrpsPasted(){
+ const raw=String($('drpsImportPaste')?.value||'').trim();
+ if(!raw) return alert('Cole o link do comprovante enviado pelo colaborador.');
+ let payload=raw;
+ try{
+  const u=new URL(raw);
+  payload=u.searchParams.get('save')||u.searchParams.get('drps')||raw;
+ }catch(e){
+  const m=raw.match(/[?&]save=([^&\s]+)/);
+  if(m) payload=decodeURIComponent(m[1]);
+ }
+ const rec=DRPSData.decodeReply(payload);
+ const res=ingestDrpsRecord(rec);
+ if(!res.ok) return alert(res.error||'Comprovante inválido.');
+ $('drpsImportPaste').value='';
+ if(res.condo && res.condo.id!==project.id) apply(res.condo,true);
+ renderNr1();
+ alert(res.dup
+  ? `Esta resposta já estava registrada${res.condo?' em '+(res.condo.empresa?.razaoSocial||'o condomínio'):''}.`
+  : `Resposta registrada${res.condo?' em '+(res.condo.empresa?.razaoSocial||'o condomínio'):' (abra o condomínio do link para ver)'}.`);
+}
+function onDrpsCondoLinksClick(e){
+ const btn=e.target.closest('[data-drps]');
+ if(!btn) return;
+ const p=V8Storage.list().find(x=>x.id===btn.dataset.id);
+ if(!p) return;
+ persistCondoToken(p);
+ if(btn.dataset.drps==='copy') copyText(drpsUrlFor(p), 'Link exclusivo copiado: '+(p.empresa?.razaoSocial||''));
+ if(btn.dataset.drps==='wa') sendDrpsWhatsApp(p);
+ if(btn.dataset.drps==='open') window.open(drpsUrlFor(p),'_blank');
+}
+function renderDrpsCondoLinks(){
+ const root=$('drpsCondoLinks');
+ if(!root) return;
+ const condos=V8Storage.list().filter(p=>p.empresa?.razaoSocial);
+ if(!condos.length){ root.innerHTML='<div class="notice">Cadastre os condomínios. Cada um gera um link próprio para enviar só aos colaboradores daquele local.</div>'; return; }
+ root.innerHTML=condos.map(p=>{
+  persistCondoToken(p);
+  const n=nColabs(p);
+  const resp=V8Storage.drpsList(p.id).length;
+  const atual=p.id===project.id;
+  const fone=p.empresa?.contatoEmpresa||'sem telefone no cadastro';
+  return `<div class="entity-card"${atual?' style="border-color:#0c7a5a;background:#f6fffa"':''}>
+   <div class="entity-head"><div>
+    <div class="entity-title">${V8Report.esc(p.empresa.razaoSocial)}${atual?' · aberto agora':''}</div>
+    <div class="entity-meta">${n?n+' colaborador(es) previstos':'Informe o nº de trabalhadores no cadastro'} · ${resp} resposta(s) · WhatsApp: ${V8Report.esc(fone)}</div>
+   </div>
+   <div class="entity-actions">
+    <button type="button" class="primary" data-drps="wa" data-id="${V8Report.esc(p.id)}">WhatsApp</button>
+    <button type="button" class="outline" data-drps="copy" data-id="${V8Report.esc(p.id)}">Copiar link</button>
+    <button type="button" class="outline" data-drps="open" data-id="${V8Report.esc(p.id)}">Abrir</button>
+   </div></div>
+  </div>`;
+ }).join('');
+}
+function drpsUrl(){ return drpsUrlFor(project); }
 function renderNr1(){
- V8Storage.ensureDrpsToken(project);
- if(project.empresa?.razaoSocial) V8Storage.save(project);
- if($('drpsLink')) $('drpsLink').value=drpsUrl();
+ persistCondoToken(project, true);
+ if($('drpsLink')) $('drpsLink').value=drpsUrlFor(project);
+ const n=nColabs(project);
  const list=V8Storage.drpsList(project.id);
+ const nome=project.empresa?.razaoSocial||'Condomínio sem nome';
+ if($('drpsCondoLabel')) $('drpsCondoLabel').textContent='Exclusivo: '+nome;
+ if($('drpsCondoMeta')) $('drpsCondoMeta').textContent=(n?n+' colaborador(es) previstos':'Informe o nº de trabalhadores no cadastro deste condomínio')+' · '+list.length+' resposta(s) neste condomínio. Este link não serve para outro condomínio.';
+ renderDrpsCondoLinks();
  const sum=$('drpsSummary');
  if(sum){
   if(!list.length) sum.innerHTML='<div class="notice">Nenhuma resposta ainda. Copie o link e envie aos colaboradores, ou abra o formulário neste aparelho para preenchimento no local.</div>';
@@ -592,17 +710,16 @@ function renderNr1(){
  }
  const root=$('drpsList');
  if(!root) return;
- if(!list.length){ root.innerHTML='<div class="notice">As respostas aparecem aqui após o envio do formulário neste aparelho.</div>'; return; }
+ if(!list.length){ root.innerHTML='<div class="notice">As respostas aparecem aqui quando o colaborador envia neste aparelho ou quando você registra o comprovante recebido no WhatsApp.</div>'; return; }
  root.innerHTML=list.map(r=>{
   const when=r.ts?new Date(r.ts).toLocaleString('pt-BR'):'';
   return `<div class="entity-card"><div class="entity-head"><div><div class="entity-title">${V8Report.esc(r.funcao||'Função não informada')} · ${V8Report.esc(r.setor||'Setor não informado')}</div><div class="entity-meta">${V8Report.esc(when)} · análise coletiva, sem nome</div></div></div></div>`;
  }).join('');
 }
 async function copyDrpsLink(){
- const url=drpsUrl();
- $('drpsLink').value=url;
- try{ await navigator.clipboard.writeText(url); alert('Link copiado. Envie aos colaboradores do condomínio.'); }
- catch(e){ $('drpsLink').select(); document.execCommand('copy'); alert('Link copiado.'); }
+ const url=drpsUrlFor(project);
+ if($('drpsLink')) $('drpsLink').value=url;
+ await copyText(url, 'Link exclusivo copiado. Envie só aos colaboradores de '+(project.empresa?.razaoSocial||'este condomínio')+'.');
 }
 function exportDrpsCsv(){
  const list=V8Storage.drpsList(project.id);

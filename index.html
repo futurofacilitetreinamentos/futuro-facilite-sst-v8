@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#075e45">
 <title>Futuro Facilite SST V8</title>
-<script>if(window.self!==window.top){location.replace(new URL('inspecao/index.html?v=8.15',location.href).href)}</script>
-<link rel="stylesheet" href="css/style.css?v=8.15">
-<link rel="stylesheet" href="css/report.css?v=8.15">
+<script>if(window.self!==window.top){location.replace(new URL('inspecao/index.html?v=8.16',location.href).href)}</script>
+<link rel="stylesheet" href="css/style.css?v=8.16">
+<link rel="stylesheet" href="css/report.css?v=8.16">
 </head>
 <body>
 <div id="loginScreen" class="login-screen">
@@ -236,15 +236,31 @@
     <section id="view-nr1" class="view">
       <div class="panel">
         <div class="panel-head"><div><span class="eyebrow">NR-1</span><h2>Diagnóstico de Risco Psicossocial</h2></div></div>
-        <div class="notice">Envie o link aos colaboradores do condomínio. São 50 perguntas em 15 páginas, no modelo do formulário que você já usa. As respostas entram na análise coletiva, sem identificação nominal.</div>
-        <label>Link para os colaboradores
+        <div class="notice">Cada condomínio tem um link exclusivo. Envie o link do condomínio A só para os colaboradores de A (ex.: 5 pessoas), o de B só para B (ex.: 3), e assim por diante. Não misture os links.</div>
+        <p id="drpsCondoLabel" class="entity-title" style="margin:0 0 8px"></p>
+        <p id="drpsCondoMeta" class="entity-meta" style="margin:0 0 10px"></p>
+        <label>Link exclusivo deste condomínio
           <input id="drpsLink" readonly>
         </label>
         <div class="actions" style="margin-top:12px">
           <button class="primary" type="button" id="copyDrpsLink">Copiar link</button>
+          <button class="primary" type="button" id="sendDrpsWhatsApp">Enviar WhatsApp</button>
           <button class="outline" type="button" id="openDrpsLink">Abrir formulário</button>
           <button class="dark" type="button" id="exportDrpsCsv">Exportar planilha</button>
         </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div><span class="eyebrow">ENVIO</span><h2>Link de cada condomínio</h2></div></div>
+        <div class="notice">Copie ou envie pelo WhatsApp o link de cada condomínio em separado. O telefone usado é o do cadastro (síndico/contato). Peça para encaminhar aos colaboradores daquele condomínio.</div>
+        <div id="drpsCondoLinks"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div><span class="eyebrow">RETORNO</span><h2>Registrar comprovante</h2></div></div>
+        <div class="notice">Se o colaborador respondeu no celular, ele envia um comprovante. Cole o link aqui no computador de atendimento para a resposta entrar neste condomínio.</div>
+        <label>Link do comprovante
+          <input id="drpsImportPaste" placeholder="Cole o link recebido no WhatsApp">
+        </label>
+        <div class="actions" style="margin-top:12px"><button class="outline" type="button" id="importDrpsBtn">Registrar resposta</button></div>
       </div>
       <div class="panel">
         <div class="panel-head"><div><span class="eyebrow">COLETIVO</span><h2>Resumo por tópico</h2></div></div>
@@ -320,12 +336,12 @@
 <div id="modal" class="modal-backdrop hidden"><div class="modal"><div class="modal-head"><h2 id="modalTitle">Cadastro</h2><button id="closeModal" class="danger">Fechar</button></div><div id="modalBody"></div></div></div>
 <div id="reportModal" class="modal-backdrop hidden"><div class="modal report-modal"><div class="modal-head"><h2 id="reportModalTitle">Prévia do documento</h2><div><button id="printFromPreview" class="dark">Imprimir / PDF</button><button id="closeReport" class="danger">Fechar</button></div></div><div id="reportPreview" class="report-preview"></div></div></div>
 
-<script src="js/auth.js?v=8.15"></script>
-<script src="js/storage.js?v=8.15"></script>
-<script src="js/drps-data.js?v=8.15"></script>
-<script src="js/pcmso.js?v=8.15"></script>
-<script src="js/ltcat.js?v=8.15"></script>
-<script src="js/report.js?v=8.15"></script>
-<script src="js/app.js?v=8.15"></script>
+<script src="js/auth.js?v=8.16"></script>
+<script src="js/storage.js?v=8.16"></script>
+<script src="js/drps-data.js?v=8.16"></script>
+<script src="js/pcmso.js?v=8.16"></script>
+<script src="js/ltcat.js?v=8.16"></script>
+<script src="js/report.js?v=8.16"></script>
+<script src="js/app.js?v=8.16"></script>
 </body>
 </html>

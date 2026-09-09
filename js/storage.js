@@ -5,13 +5,13 @@ const V8Storage=(()=>{
  const REPORTS='ff_sst_v7_reports';
  const DRPS='ff_sst_v8_drps';
  function list(){try{return JSON.parse(localStorage.getItem(KEY)||'[]')}catch(e){return[]}}
- function save(p){
+ function save(p,opts){
   p.agenda=Array.isArray(p.agenda)?p.agenda:[];
   if(!p.drpsToken) p.drpsToken='d'+p.id+Math.random().toString(36).slice(2,8);
   const a=list(),i=a.findIndex(x=>x.id===p.id);
   if(i>=0)a[i]=p;else a.unshift(p);
   localStorage.setItem(KEY,JSON.stringify(a));
-  setAtivo(p.id);
+  if(!opts || opts.ativo!==false) setAtivo(p.id);
   return p;
  }
  function get(id){return list().find(x=>x.id===id)}
