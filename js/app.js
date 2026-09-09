@@ -179,7 +179,7 @@ function pushInspectionContext(){
 function openInspecao(){
  const f=$('inspecaoFrame');
  if(!f) return;
- const src=new URL('inspecao/index.html?v=8.12', document.baseURI).href;
+ const src=new URL('inspecao/index.html?v=8.13', document.baseURI).href;
  if(f.dataset.loaded!=='1'){
   f.onload=()=>pushInspectionContext();
   f.src=src;
@@ -364,6 +364,15 @@ function seedEquipe(){
   nome:'Sthefany Thiara Martins de Sousa',
   funcao:'Engenheira de Segurança do Trabalho',
   registro:'25958/D-DF',
+  rqe:'',
+  telefone:'',
+  email:''
+ },{
+  id:'eq_med_cristovam',
+  tipo:'medico',
+  nome:'Dr. Cristovam Scapulatempo Neto',
+  funcao:'Médico responsável',
+  registro:'102037',
   rqe:'',
   telefone:'',
   email:''
