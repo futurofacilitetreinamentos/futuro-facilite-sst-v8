@@ -43,6 +43,12 @@ function pullCadastro(){
   if(inFrame() && parent.inspectionContext) applyCadastro(parent.inspectionContext());
  }catch(e){}
 }
+function technicianFromContext(){
+ try{
+  if(inFrame() && parent.inspectionContext) return parent.inspectionContext()?.tecnico||'';
+ }catch(e){}
+ return '';
+}
 function init(){
  const session=currentUser();
  if(!session){
@@ -51,8 +57,9 @@ function init(){
   return;
  }
  $('dataVisita').value=new Date().toISOString().slice(0,10);
- $('tecnico').value=session.name;
- $('assinaturaTecnico').value=session.name;
+ const tec=technicianFromContext();
+ $('tecnico').value=tec;
+ $('assinaturaTecnico').value=tec;
  $('reportNumber').textContent=FFStorage.nextNumber();
  renderChecklist(); renderHistory();
  $('newBtn').onclick=newReport;$('saveBtn').onclick=saveReport;$('savedBtn').onclick=openSaved;
@@ -148,7 +155,7 @@ function renderSaved(){const q=$('searchSaved').value.toLowerCase();renderHistor
 function renderHistoryInto(root,list){root.innerHTML=list.length?'':'<div style="color:#667085">Nenhum relatório salvo.</div>';list.forEach(d=>{const nc=Object.values(d.checklist||{}).filter(i=>i.status==='Não conforme').length;const el=document.createElement('div');el.className='history-item';el.innerHTML=`<div><div class="history-title">${FFReport.esc(d.condominio||'Sem nome')}</div><div class="history-meta">${FFReport.esc(d.numero||'')} · ${FFReport.fmt(d.dataVisita)} · ${nc} não conformidade(s)</div></div><div class="history-actions"><button class="outline small">Prévia</button><button class="primary small">Editar</button><button class="dark small">PDF</button><button class="outline small">Duplicar</button><button class="danger small">Excluir</button></div>`;const bs=el.querySelectorAll('button');bs[0].onclick=()=>preview(d);bs[1].onclick=()=>loadReport(d.id,true);bs[2].onclick=()=>FFReport.print(d);bs[3].onclick=()=>duplicate(d.id);bs[4].onclick=()=>removeReport(d.id);root.appendChild(el)})}
 function removeReport(id){if(!confirm('Excluir este relatório?'))return;FFStorage.remove(id);renderHistory();renderSaved()}
 function duplicate(id){const d=structuredClone?structuredClone(FFStorage.get(id)):JSON.parse(JSON.stringify(FFStorage.get(id)));if(!d)return;d.id=Date.now().toString();d.numero=FFStorage.nextNumber();d.salvoEm=new Date().toLocaleString('pt-BR');FFStorage.save(d);renderHistory();renderSaved();alert(`Relatório duplicado como ${d.numero}.`)}
-function newReport(){if(!confirm('Iniciar nova inspeção? Salve as alterações atuais antes de continuar.'))return;currentId=null;coverPhoto='';photos={};fields.forEach(f=>$(f).value='');const session=currentUser();$('tecnico').value=session?.name||'';$('assinaturaTecnico').value=session?.name||'';$('objetivo').value='Avaliar as condições de segurança e saúde no ambiente de trabalho do condomínio, identificar perigos e recomendar medidas preventivas e corretivas.';$('dataVisita').value=new Date().toISOString().slice(0,10);$('reportNumber').textContent=FFStorage.nextNumber();$('fotoCapaPreview').innerHTML='';$('editingBanner').classList.add('hidden');$('saveBtn').textContent='Salvar';renderChecklist();pullCadastro()}
+function newReport(){if(!confirm('Iniciar nova inspeção? Salve as alterações atuais antes de continuar.'))return;currentId=null;coverPhoto='';photos={};fields.forEach(f=>$(f).value='');const tec=technicianFromContext();$('tecnico').value=tec;$('assinaturaTecnico').value=tec;$('objetivo').value='Avaliar as condições de segurança e saúde no ambiente de trabalho do condomínio, identificar perigos e recomendar medidas preventivas e corretivas.';$('dataVisita').value=new Date().toISOString().slice(0,10);$('reportNumber').textContent=FFStorage.nextNumber();$('fotoCapaPreview').innerHTML='';$('editingBanner').classList.add('hidden');$('saveBtn').textContent='Salvar';renderChecklist();pullCadastro()}
 function updateSummary(){let c=0,nc=0,p=0;document.querySelectorAll('.check-item').forEach(el=>{const s=el.dataset.status;if(s==='Conforme')c++;else if(s==='Não conforme')nc++;else if(s==='Pendente')p++});$('sumConforme').textContent=c;$('sumNaoConforme').textContent=nc;$('sumPendente').textContent=p}
 function autoConclusion(){const d=collect(),items=Object.values(d.checklist),nc=items.filter(i=>i.status==='Não conforme'),high=nc.filter(i=>['Alto','Crítico'].includes(i.risco));$('conclusao').value=nc.length?`A inspeção realizada identificou ${nc.length} não conformidade(s) nas condições avaliadas${high.length?`, sendo ${high.length} classificada(s) como risco alto ou crítico`:''}. Recomenda-se a implementação das medidas corretivas indicadas neste relatório, priorizando os riscos de maior gravidade e acompanhando o cumprimento dos prazos estabelecidos. Após as adequações, recomenda-se nova verificação das condições de trabalho.`:`Na inspeção realizada não foram identificadas não conformidades nos itens avaliados. Recomenda-se a manutenção das medidas preventivas existentes, o acompanhamento periódico das condições de trabalho e a atualização contínua dos documentos e controles de SST.`}
 function exportCSV(){const d=collect(),rows=[['Relatório',d.numero],['Condomínio',d.condominio],['Data',d.dataVisita],[],['Item','Situação','Risco','Observação','Medida recomendada','Responsável','Prazo']];Object.values(d.checklist).forEach(i=>rows.push([i.titulo,i.status,i.risco,i.obs,i.acao,i.responsavel,i.prazo]));const csv=rows.map(r=>r.map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(';')).join('\n');const b=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=`${d.numero}_${(d.condominio||'condominio').replace(/[^\w]+/g,'_')}.csv`;a.click();URL.revokeObjectURL(a.href)}

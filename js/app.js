@@ -12,10 +12,10 @@ function init(){
  $('addSst')?.addEventListener('click',()=>openEquipeModal('sst'));
  $('addMedico')?.addEventListener('click',()=>openEquipeModal('medico'));
  $('addEng')?.addEventListener('click',()=>openEquipeModal('engenheiro'));
- document.querySelectorAll('[data-pick]').forEach(b=>b.addEventListener('click',()=>openPickEquipe(b.dataset.pick)));
+ document.querySelectorAll('[data-pick]').forEach(b=>b.addEventListener('click',()=>handlePick(b.dataset.pick)));
  document.querySelectorAll('.pick-wrap input').forEach(inp=>inp.addEventListener('click',()=>{
   const tipo=inp.closest('label')?.querySelector('[data-pick]')?.dataset.pick;
-  if(tipo) openPickEquipe(tipo);
+  if(tipo) handlePick(tipo);
  }));
  $('closeModal').onclick=closeModal;$('previewPgr').onclick=previewPgr;$('printPgr').onclick=()=>V8Report.print(collect());$('previewPcmso')?.addEventListener('click',previewPcmso);$('printPcmso')?.addEventListener('click',()=>printPcmsoDoc());$('previewLtcat')?.addEventListener('click',previewLtcat);$('printLtcat')?.addEventListener('click',()=>printLtcatDoc());$('closeReport').onclick=closeReport;$('printFromPreview').onclick=printFromPreview;
  $('cnpj').oninput=e=>e.target.value=formatCNPJ(e.target.value);
@@ -32,10 +32,6 @@ function init(){
  const saved=V8Storage.ativo();
  seedEquipe();
  if(saved) apply(saved,true);
- else{
-  const session=FFAuth.session();
-  $('agTecnico').value=session?.name||'';
- }
  renderAll();
 }
 function hasCadastro(){return !!(project.empresa?.razaoSocial||$('razaoSocial')?.value)}
@@ -110,9 +106,8 @@ function newProject(){
  if(project.empresa?.razaoSocial) V8Storage.save(project);
  project=V8Storage.blank();
  empFields.forEach(f=>$(f).value='');
- const session=FFAuth.session();
  $('dataElaboracao').value=new Date().toISOString().slice(0,10);
- $('agTecnico').value=session?.name||'';
+ $('agTecnico').value='';
  $('projectLabel').textContent='Novo condomínio';
  V8Storage.setAtivo(project.id);
  renderAll();
@@ -184,7 +179,7 @@ function pushInspectionContext(){
 function openInspecao(){
  const f=$('inspecaoFrame');
  if(!f) return;
- const src=new URL('inspecao/index.html?v=8.15', document.baseURI).href;
+ const src=new URL('inspecao/index.html?v=8.17', document.baseURI).href;
  if(f.dataset.loaded!=='1'){
   f.onload=()=>pushInspectionContext();
   f.src=src;
@@ -223,13 +218,9 @@ function renderAgenda(){
  const note=$('agendaCondoNote');
  const nome=project.empresa?.razaoSocial;
  if(note) note.textContent=nome
-  ? `Inspeção de ${nome}. Os dados de cadastro serão preenchidos automaticamente no checklist e nos laudos.`
+  ? `Inspeção de ${nome}. Clique na seta do técnico para escolher qualquer pessoa já cadastrada.`
   : 'Cadastre o condomínio antes de agendar.';
- const session=FFAuth.session();
- if($('agTecnico') && !$('agTecnico').value) $('agTecnico').value=session?.name||'';
  if($('agData') && !$('agData').value) $('agData').value=new Date().toISOString().slice(0,10);
- const dl=$('sstTecnicos');
- if(dl) dl.innerHTML=V8Storage.equipeByTipo('sst').map(x=>`<option value="${V8Report.esc(x.nome)}"></option>`).join('');
  const root=$('agendaList');
  if(!root) return;
  const list=(project.agenda||[]).slice().sort((a,b)=>(b.data||'').localeCompare(a.data||''));
@@ -245,8 +236,9 @@ function renderAgenda(){
 function agendarInspecao(){
  collect();
  if(!hasCadastro()) return alert('Cadastre o condomínio primeiro.');
- const data=$('agData').value, hora=$('agHora').value, tecnico=$('agTecnico').value, obs=$('agObs').value;
+ const data=$('agData').value, hora=$('agHora').value, tecnico=$('agTecnico').value.trim(), obs=$('agObs').value;
  if(!data) return alert('Informe a data da inspeção.');
+ if(!tecnico) return alert('Selecione o técnico responsável. A seta lista quem já está cadastrado.');
  project.agenda=project.agenda||[];
  project.agenda.unshift({id:'ag_'+Date.now(), data, hora, tecnico, obs, status:'agendada'});
  V8Storage.save(project);
@@ -409,6 +401,48 @@ function seedEquipe(){
   }
   V8Storage.saveEquipe({...d});
  });
+}
+function handlePick(tipo){
+ if(tipo==='agendaTecnico') openPickAgendaTecnico();
+ else openPickEquipe(tipo);
+}
+function agendaInspectors(){
+ const out=[];
+ const seen=new Set();
+ function add(id,nome,meta){
+  const name=String(nome||'').trim();
+  if(!name) return;
+  const key=name.toLowerCase();
+  if(seen.has(key)) return;
+  seen.add(key);
+  out.push({id,nome:name,meta:meta||''});
+ }
+ const papel={sst:'Responsável SST',medico:'Médico do Trabalho',engenheiro:'Engenheiro de Segurança'};
+ V8Storage.equipeList().forEach(x=>{
+  add(x.id, x.nome, [papel[x.tipo]||x.tipo, equipeMeta(x)].filter(Boolean).join(' · '));
+ });
+ (FFAuth.allUsers()||[]).forEach(u=>{
+  add('user_'+(u.user||u.email||u.name), u.name, (u.role==='admin'?'Administrador':'Técnico')+' · acesso ao sistema');
+ });
+ return out.sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
+}
+function openPickAgendaTecnico(){
+ const list=agendaInspectors();
+ $('modalTitle').textContent='Selecionar técnico da inspeção';
+ if(!list.length){
+  $('modalBody').innerHTML=`<div class="notice">Ninguém cadastrado ainda. Cadastre em Equipe técnica ou em Minha conta.</div><div style="margin-top:14px;text-align:right"><button class="primary" type="button" id="goEquipeCad">Abrir Equipe técnica</button></div>`;
+  $('goEquipeCad').onclick=()=>{closeModal();go('equipe');};
+  $('modal').classList.remove('hidden');
+  return;
+ }
+ const items=list.map(x=>`<button type="button" class="pick-item" data-nome="${V8Report.esc(x.nome)}"><b>${V8Report.esc(x.nome)}</b><span>${V8Report.esc(x.meta)}</span></button>`).join('');
+ $('modalBody').innerHTML=`<div class="notice">Qualquer pessoa já cadastrada pode ser o técnico da inspeção. Não fica preso a quem está logado.</div><div class="pick-list">${items}<button type="button" class="outline" id="clearPick">Limpar seleção</button></div>`;
+ $('modalBody').querySelectorAll('[data-nome]').forEach(b=>b.onclick=()=>{
+  $('agTecnico').value=b.dataset.nome||'';
+  closeModal();
+ });
+ $('clearPick').onclick=()=>{ $('agTecnico').value=''; closeModal(); };
+ $('modal').classList.remove('hidden');
 }
 function applyEquipePick(tipo,person){
  if(tipo==='sst'){
