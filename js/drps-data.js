@@ -91,6 +91,29 @@ const DRPSData=(()=>{
   if(!scores.length) return 0;
   return scores.reduce((a,b)=>a+b,0)/scores.length;
  }
+ function roundUp0(n){
+  const x=Number(n);
+  if(!Number.isFinite(x)) return 0;
+  return Math.ceil(x-1e-10);
+ }
+ function questionRawMean(list,n){
+  if(!list.length) return 0;
+  return list.reduce((s,r)=>s+(Number(r.answers?.[n])||0),0)/list.length;
+ }
+ function questionGravidadeNum(list,n){
+  const e=roundUp0(questionRawMean(list,n));
+  const f=INV.has(n)?(4-e):e;
+  if(f>=3) return 3;
+  if(f===2) return 2;
+  if(f<=1) return 1;
+  return 0;
+ }
+ function gravidadeColetiva(media){
+  if(!(media>0)) return {n:0,l:'—'};
+  if(media<=1.66) return {n:1,l:'Baixa'};
+  if(media<=2.32) return {n:2,l:'Média'};
+  return {n:3,l:'Alta'};
+ }
  const FONTES={
   1:'Cultura permissiva a desrespeito; ausência de canal de denúncia; liderança despreparada; comunicação violenta.',
   2:'Liderança ausente; falta de escuta; cobrança sem acompanhamento; RH pouco atuante.',
@@ -110,9 +133,9 @@ const DRPSData=(()=>{
  function bundle(list){
   list=Array.isArray(list)?list:[];
   const topicos=TOPICS.map(t=>{
-   const avgs=list.map(r=>topicAvg(r.answers||{},t)).filter(v=>v>0);
-   const avg=avgs.length?avgs.reduce((a,b)=>a+b,0)/avgs.length:0;
-   const g=gravidade(Math.round(avg));
+   const nums=list.length?t.qs.map(n=>questionGravidadeNum(list,n)):[];
+   const avg=nums.length?nums.reduce((a,b)=>a+b,0)/nums.length:0;
+   const g=list.length?gravidadeColetiva(avg):{n:0,l:'—'};
    return {id:t.id,nome:t.nome,media:avg,gravidade:g.l,gravidadeN:g.n,fonte:FONTES[t.id]||'',agravo:AGRAVOS};
   });
   const porSetor={};
@@ -121,6 +144,15 @@ const DRPSData=(()=>{
    porSetor[k]=(porSetor[k]||0)+1;
   });
   return {n:list.length,topicos,porSetor,altos:topicos.filter(t=>t.gravidadeN>=3)};
+ }
+ function applyResumo(d,resumo){
+  if(!d||!Array.isArray(resumo)||!(d.n>0)) return d;
+  const topicos=(d.topicos||[]).map(t=>{
+   const o=resumo.find(x=>x.id===t.id);
+   if(!o) return t;
+   return {...t,media:Number(o.media)||0,gravidade:o.gravidade||t.gravidade,gravidadeN:Number(o.gravidadeN)||0};
+  });
+  return {...d,topicos,altos:topicos.filter(t=>t.gravidadeN>=3)};
  }
  const PUBLIC_BASE='https://futurofacilitetreinamentos.github.io/futuro-facilite-sst-v8/';
  function publicBase(){
@@ -190,5 +222,5 @@ const DRPSData=(()=>{
   if(n>0) return n;
   return (p?.funcoes||[]).reduce((s,f)=>s+(Number(f.quantidade)||0),0);
  }
- return {SCALE,TOPICS,QUESTIONS:Q,corrected,gravidade,topicAvg,bundle,FONTES,AGRAVOS,PUBLIC_BASE,publicBase,encodeReply,decodeReply,formUrl,ingestUrl,nColabs};
+ return {SCALE,TOPICS,QUESTIONS:Q,corrected,gravidade,gravidadeColetiva,topicAvg,questionGravidadeNum,bundle,applyResumo,FONTES,AGRAVOS,PUBLIC_BASE,publicBase,encodeReply,decodeReply,formUrl,ingestUrl,nColabs};
 })();

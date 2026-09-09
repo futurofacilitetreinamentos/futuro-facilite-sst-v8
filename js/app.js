@@ -30,12 +30,10 @@ function init(){
  $('importDrpsBtn')?.addEventListener('click',importDrpsPasted);
  $('drpsCondoLinks')?.addEventListener('click',onDrpsCondoLinksClick);
  seedEquipe();
- const villa=SeedVilla.run();
- if(villa) apply(villa,true);
- else{
-  const saved=V8Storage.ativo();
-  if(saved) apply(saved,true);
- }
+ SeedVilla.run();
+ if(typeof SeedLira!=='undefined') SeedLira.run();
+ const saved=V8Storage.ativo();
+ if(saved) apply(saved,true);
  renderAll();
 }
 function hasCadastro(){return !!(project.empresa?.razaoSocial||$('razaoSocial')?.value)}
@@ -69,12 +67,37 @@ function openView(v,btn){
  if(v==='equipe') renderEquipe();
 }
 function formatCNPJ(value){const d=String(value||'').replace(/\D/g,'').slice(0,14);if(d.length<=2)return d;if(d.length<=5)return d.slice(0,2)+'.'+d.slice(2);if(d.length<=8)return d.slice(0,2)+'.'+d.slice(2,5)+'.'+d.slice(5);if(d.length<=12)return d.slice(0,2)+'.'+d.slice(2,5)+'.'+d.slice(5,8)+'/'+d.slice(8);return d.slice(0,2)+'.'+d.slice(2,5)+'.'+d.slice(5,8)+'/'+d.slice(8,12)+'-'+d.slice(12)}
+function slimInspecao(d){
+ if(!d) return null;
+ const items=Object.values(d.checklist||{});
+ const ncs=items.filter(x=>x.status==='Não conforme').map(x=>({
+  titulo:x.titulo||'',obs:x.obs||'',acao:x.acao||'',risco:x.risco||'',prazo:x.prazo||'',responsavel:x.responsavel||''
+ }));
+ const photos=[];
+ if(d.fotoCapa) photos.push({titulo:'Registro fotográfico da visita',src:d.fotoCapa});
+ items.forEach(x=>{(x.photos||[]).forEach(src=>{ if(src) photos.push({titulo:x.titulo||'Registro',src,obs:x.obs||''}); })});
+ return {
+  numero:d.numero||'',
+  dataVisita:d.dataVisita||'',
+  tecnico:d.tecnico||'',
+  objetivo:d.objetivo||'',
+  conclusao:d.conclusao||'',
+  recomendacoes:d.recomendacoes||'',
+  nItens:items.length,
+  nConformes:items.filter(x=>x.status==='Conforme').length,
+  nNc:ncs.length,
+  ncs,
+  photos:photos.slice(0,16)
+ };
+}
 function collect(){
  empFields.forEach(f=>project.empresa[f]=$(f)?.value||'');
  project.agenda=Array.isArray(project.agenda)?project.agenda:[];
  project.salvoEm=new Date().toLocaleString('pt-BR');
  const snap=JSON.parse(JSON.stringify(project));
  snap.drps=DRPSData.bundle(V8Storage.drpsList(project.id));
+ if(typeof SeedVilla!=='undefined' && SeedVilla.overlay) snap.drps=SeedVilla.overlay(snap.drps, V8Storage.drpsList(project.id));
+ snap.inspecao=slimInspecao(V8Storage.inspections(project.id)[0]);
  return snap;
 }
 function apply(p,silent){
@@ -183,7 +206,7 @@ function pushInspectionContext(){
 function openInspecao(){
  const f=$('inspecaoFrame');
  if(!f) return;
- const src=new URL('inspecao/index.html?v=8.21', document.baseURI).href;
+ const src=new URL('inspecao/index.html?v=8.25', document.baseURI).href;
  if(f.dataset.loaded!=='1'){
   f.onload=()=>pushInspectionContext();
   f.src=src;
@@ -282,7 +305,7 @@ function renderLaudos(){
   },
   {
    title:'PGR / NR-1',
-   meta:st.cadastro?'Cadastro, inventário, plano de ação e resultado coletivo do DRPS':'Cadastre o condomínio e o inventário',
+   meta:st.cadastro?(insp?`Cadastro, inventário, visita ${insp.numero||''} e DRPS coletivo`:'Cadastro e inventário — a visita entra após a inspeção'):'Cadastre o condomínio e o inventário',
    ready:st.cadastro,
    actions: st.cadastro
     ? `<button class="outline" data-act="prev-pgr">Prévia</button><button class="dark" data-act="pdf-pgr">Gerar PDF</button>`
@@ -298,7 +321,7 @@ function renderLaudos(){
   },
   {
    title:'PCMSO / NR-7',
-   meta:st.cadastro?(project.empresa?.medicoTrabalho?'Usa o médico do condomínio e os riscos do PGR':'Selecione o médico no cadastro do condomínio'):'Cadastre o condomínio',
+   meta:st.cadastro?(project.empresa?.medicoTrabalho?'Funções e riscos do cadastro, com o médico do condomínio':'Selecione o médico no cadastro do condomínio'):'Cadastre o condomínio',
    ready:st.cadastro && !!project.empresa?.medicoTrabalho,
    actions: st.cadastro
     ? `<button class="outline" data-act="prev-pcmso">Prévia</button><button class="dark" data-act="pdf-pcmso">Gerar PDF</button>`
@@ -306,7 +329,7 @@ function renderLaudos(){
   },
   {
    title:'LTCAT',
-   meta:st.cadastro?(project.empresa?.engSeguranca?'Usa o engenheiro do condomínio e os riscos do PGR':'Selecione o engenheiro no cadastro do condomínio'):'Cadastre o condomínio',
+   meta:st.cadastro?(project.empresa?.engSeguranca?(insp?'Inventário, visita técnica e registro fotográfico da inspeção':'Inventário do PGR — fotos entram após a inspeção'):'Selecione o engenheiro no cadastro do condomínio'):'Cadastre o condomínio',
    ready:st.cadastro && !!project.empresa?.engSeguranca,
    actions: st.cadastro
     ? `<button class="outline" data-act="prev-ltcat">Prévia</button><button class="dark" data-act="pdf-ltcat">Gerar PDF</button>`
@@ -367,7 +390,13 @@ function renderSetores(){entityList($('setoresList'),project.setores,'setor',x=>
 function renderFuncoes(){entityList($('funcoesList'),project.funcoes,'funcao',x=>`${V8Report.esc(x.setor||'')} · ${V8Report.esc(x.quantidade||'0')} trabalhador(es) · ${V8Report.esc(x.cbo||'')}`)}
 function renderGhe(){entityList($('gheList'),project.ghe,'ghe',x=>`${V8Report.esc(x.setor||'')} · ${V8Report.esc(x.funcoes||'')}`)}
 function renderRiscos(){const root=$('riscosList');root.innerHTML=project.riscos.length?'':'<div class="notice">Nenhum risco cadastrado.</div>';project.riscos.forEach((r,i)=>{const score=Number(r.prob)*Number(r.sev),lvl=V8Report.level(score),cl=lvl==='Baixo'?'baixo':lvl==='Moderado'?'moderado':lvl==='Alto'?'alto':'critico';const d=document.createElement('div');d.className='risk-row';d.innerHTML=`<div><b>${V8Report.esc(r.perigo)}</b><br><span>${V8Report.esc(r.ghe||r.funcao||'-')}</span></div><div>${V8Report.esc(r.grupo)}</div><div>P ${r.prob} × S ${r.sev}</div><div class="risk-level ${cl}">${lvl}</div><div>${V8Report.esc(r.status||'Pendente')}</div><div class="entity-actions"><button class="outline">Editar</button><button class="danger">Excluir</button></div>`;const bs=d.querySelectorAll('button');bs[0].onclick=()=>openEntityModal('risco',i);bs[1].onclick=()=>{if(confirm('Excluir este risco?')){project.riscos.splice(i,1);renderAll()}};root.appendChild(d)})}
-function renderPlano(){const rows=project.riscos.filter(r=>r.acao);$('planoTable').innerHTML=rows.length?`<table class="table"><thead><tr><th>Risco</th><th>Nível</th><th>Ação</th><th>Responsável</th><th>Prazo</th><th>Status</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${V8Report.esc(r.perigo)}</td><td>${V8Report.level(Number(r.prob)*Number(r.sev))}</td><td>${V8Report.esc(r.acao)}</td><td>${V8Report.esc(r.responsavel||'-')}</td><td>${V8Report.fmt(r.prazo)}</td><td>${V8Report.esc(r.status||'Pendente')}</td></tr>`).join('')}</tbody></table>`:'<div class="notice">Cadastre ações nos riscos do inventário para formar o plano de ação.</div>'}
+function renderPlano(){
+ const fromRiscos=project.riscos.filter(r=>r.acao).map(r=>({origem:'Inventário',risco:r.perigo,nivel:V8Report.level(Number(r.prob)*Number(r.sev)),acao:r.acao,resp:r.responsavel||'-',prazo:r.prazo,status:r.status||'Pendente'}));
+ const insp=V8Storage.inspections(project.id)[0];
+ const fromNc=Object.values(insp?.checklist||{}).filter(x=>x.status==='Não conforme'&&x.acao).map(x=>({origem:'Inspeção',risco:x.titulo,nivel:x.risco||'-',acao:x.acao,resp:x.responsavel||'-',prazo:x.prazo,status:'Pendente'}));
+ const rows=fromRiscos.concat(fromNc);
+ $('planoTable').innerHTML=rows.length?`<table class="table"><thead><tr><th>Origem</th><th>Risco / item</th><th>Nível</th><th>Ação</th><th>Responsável</th><th>Prazo</th><th>Status</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${V8Report.esc(r.origem)}</td><td>${V8Report.esc(r.risco)}</td><td>${V8Report.esc(r.nivel)}</td><td>${V8Report.esc(r.acao)}</td><td>${V8Report.esc(r.resp)}</td><td>${V8Report.fmt(r.prazo)}</td><td>${V8Report.esc(r.status)}</td></tr>`).join('')}</tbody></table>`:'<div class="notice">Cadastre ações nos riscos do inventário ou registre não conformidades na inspeção para formar o plano de ação.</div>';
+}
 function seedEquipe(){
  const defaults=[{
   id:'eq_sst_daniel',
@@ -393,6 +422,15 @@ function seedEquipe(){
   nome:'Sthefany Thiara Martins de Sousa',
   funcao:'Engenheira de Segurança do Trabalho',
   registro:'25958/D-DF',
+  rqe:'',
+  telefone:'',
+  email:''
+ },{
+  id:'eq_med_leticia',
+  tipo:'medico',
+  nome:'Dra. Leticia de Lara Rocha Silva',
+  funcao:'Médico responsável',
+  registro:'31140/DF',
   rqe:'',
   telefone:'',
   email:''
@@ -544,9 +582,9 @@ function openEquipeModal(tipo,id){
  $('modal').classList.remove('hidden');
 }
 function renderPgrSummary(){
- const p=collect(),high=p.riscos.filter(r=>Number(r.prob)*Number(r.sev)>=10).length,d=p.drps||{n:0,altos:[]};
+ const p=collect(),high=p.riscos.filter(r=>Number(r.prob)*Number(r.sev)>=10).length,d=p.drps||{n:0,altos:[]},insp=p.inspecao;
  $('pgrSummary').innerHTML=`<div class="cards metrics" style="grid-template-columns:repeat(5,1fr)"><article><b>${p.setores.length}</b><span>Setores</span></article><article><b>${p.ghe.length}</b><span>GHEs</span></article><article><b>${p.riscos.length}</b><span>Riscos</span></article><article><b>${high}</b><span>Altos/críticos</span></article><article><b>${d.n||0}</b><span>DRPS respostas</span></article></div>
- <div class="notice" style="margin-top:12px">${d.n?`O PGR inclui o resultado coletivo do DRPS (${d.n} resposta(s); ${(d.altos||[]).length} tópico(s) com gravidade alta).`:'O PGR reserva a seção de riscos psicossociais. Quando houver respostas do DRPS, o resultado entra automaticamente no documento.'}</div>`;
+ <div class="notice" style="margin-top:12px">${insp?`A visita ${V8Report.esc(insp.numero||'SST')} de ${V8Report.fmt(insp.dataVisita)} entra no PGR (constatações e plano de ação). `:'Após a inspeção SST, o relatório, as não conformidades e as fotos entram automaticamente no PGR e no LTCAT. '}${d.n?`O PGR inclui o resultado coletivo do DRPS (${d.n} resposta(s); ${(d.altos||[]).length} tópico(s) com gravidade alta).`:'O PGR reserva a seção de riscos psicossociais. Quando houver respostas do DRPS, o resultado entra automaticamente no documento.'}</div>`;
 }
 function previewPgr(){const p=collect();if(!p.empresa.razaoSocial)return alert('Cadastre o condomínio primeiro.');window._previewKind='pgr';window._previewProject=p;if($('reportModalTitle'))$('reportModalTitle').textContent='Prévia do PGR';$('reportPreview').innerHTML=V8Report.build(p);$('reportModal').classList.remove('hidden')}
 function previewPcmso(){
@@ -760,13 +798,11 @@ function renderNr1(){
  if(sum){
   if(!list.length) sum.innerHTML='<div class="notice">Nenhuma resposta ainda. Copie o link e envie aos colaboradores, ou abra o formulário neste aparelho para preenchimento no local.</div>';
   else{
-   const rows=DRPSData.TOPICS.map(t=>{
-    const avgs=list.map(r=>DRPSData.topicAvg(r.answers||{},t)).filter(v=>v>0);
-    const avg=avgs.length?avgs.reduce((a,b)=>a+b,0)/avgs.length:0;
-    const g=DRPSData.gravidade(Math.round(avg));
-    return `<tr><td>${V8Report.esc(t.nome)}</td><td>${avg.toFixed(2)}</td><td>${g.l}</td></tr>`;
-   }).join('');
-   sum.innerHTML=`<p class="notice">${list.length} resposta(s) coletiva(s) neste condomínio.</p><table class="table"><thead><tr><th>Tópico</th><th>Média (1–5)</th><th>Gravidade</th></tr></thead><tbody>${rows}</tbody></table>`;
+   const d=typeof SeedVilla!=='undefined' && SeedVilla.overlay
+    ? SeedVilla.overlay(DRPSData.bundle(list), list)
+    : DRPSData.bundle(list);
+   const rows=d.topicos.map(t=>`<tr${t.gravidadeN>=3?' class="alta"':''}><td>${V8Report.esc(t.nome)}</td><td>${t.media?t.media.toFixed(2):'—'}</td><td>${V8Report.esc(t.gravidade||'—')}</td></tr>`).join('');
+   sum.innerHTML=`<p class="notice">${d.n} resposta(s) coletiva(s) neste condomínio.</p><table class="table"><thead><tr><th>Tópico</th><th>Média (1–3)</th><th>Gravidade</th></tr></thead><tbody>${rows}</tbody></table>`;
   }
  }
  const root=$('drpsList');

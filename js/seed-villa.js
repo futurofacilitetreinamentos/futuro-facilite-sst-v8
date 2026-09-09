@@ -129,6 +129,65 @@ const SeedVilla=(()=>{
   const seq=parseInt(localStorage.getItem(SEQ)||'0',10);
   if(seq<1) localStorage.setItem(SEQ,'1');
  }
+ const DRPS_FORMS=[
+  {ts:'2026-08-11T16:32:22',f:'Porteiro Noturno',s:'Portaria',a:[0,4,0,0,4,4,4,4,4,4,2,4,2,4,4,4,4,4,3,4,1,4,4,0,0,4,4,4,0,1,1,0,2,0,0,0,2,0,0,2,0,0,4,0,4,0,4,3,4,4]},
+  {ts:'2026-08-11T16:56:21',f:'Porteira',s:'Portaria',a:[0,1,0,0,0,1,1,0,4,1,4,4,0,4,4,0,0,4,4,3,0,2,0,0,1,4,2,1,0,0,0,0,2,1,1,1,1,1,2,4,1,2,4,4,2,1,2,4,2,2]},
+  {ts:'2026-08-11T17:17:54',f:'Auxiliar de serviços gerais',s:'Limpeza',a:[0,4,4,0,4,4,4,4,4,4,0,4,4,4,4,4,4,4,4,4,1,4,4,0,0,4,4,4,0,0,0,0,0,0,0,1,1,0,1,4,1,0,4,0,0,0,4,0,0,4]},
+  {ts:'2026-08-12T00:21:46',f:'Limpeza do condomínio, e conservação',s:'Limpeza',a:[2,0,0,0,0,4,4,4,4,4,4,4,4,4,4,4,4,4,2,2,2,4,4,4,4,4,4,4,4,0,0,0,0,0,0,0,2,4,4,4,4,4,3,4,4,4,3,4,4,4]},
+  {ts:'2026-08-12T00:26:57',f:'Limpeza',s:'Limpeza',a:[4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,2,4,4,3,4,4,4,4,4,4,4,4]},
+  {ts:'2026-08-12T12:23:06',f:'Serviços gerais',s:'Villa Borghese',a:[0,4,4,0,4,4,4,4,4,4,0,4,0,4,4,4,4,4,4,4,0,4,4,0,0,4,4,4,0,0,0,0,0,0,0,0,0,0,0,4,0,0,4,0,0,0,4,0,0,4]},
+  {ts:'2026-08-12T21:04:36',f:'Sindica',s:'Administrativo',a:[4,4,0,4,0,4,3,0,4,3,0,4,0,4,4,2,4,4,2,0,4,4,3,0,1,2,4,4,0,4,0,2,0,0,0,0,4,4,4,1,0,1,4,0,0,0,4,2,0,4]},
+  {ts:'2026-08-12T22:14:05',f:'Porteiro',s:'Portaria',a:[2,2,0,1,3,1,2,3,2,2,2,0,1,0,2,2,2,2,1,1,2,3,3,2,1,2,2,1,4,0,0,1,0,0,0,0,3,2,2,1,1,1,3,0,2,2,3,2,1,1]},
+  {ts:'2026-08-14T22:49:39',f:'Auxiliar de limpeza',s:'Limpeza',a:[0,1,4,0,4,4,4,4,4,4,0,4,0,4,4,4,4,4,4,4,3,4,4,0,0,4,4,4,0,0,0,0,0,0,0,0,0,0,1,4,0,1,4,0,0,0,4,0,0,4]}
+ ];
+ const DRPS_RESUMO=[
+  {id:1,media:1.4,gravidade:'Baixa',gravidadeN:1},
+  {id:2,media:1.2,gravidade:'Baixa',gravidadeN:1},
+  {id:3,media:1.5,gravidade:'Baixa',gravidadeN:1},
+  {id:4,media:1.5,gravidade:'Baixa',gravidadeN:1},
+  {id:5,media:1,gravidade:'Baixa',gravidadeN:1},
+  {id:6,media:1,gravidade:'Baixa',gravidadeN:1},
+  {id:7,media:1.5,gravidade:'Baixa',gravidadeN:1},
+  {id:8,media:1,gravidade:'Baixa',gravidadeN:1},
+  {id:9,media:1.25,gravidade:'Baixa',gravidadeN:1},
+  {id:10,media:1.5,gravidade:'Baixa',gravidadeN:1},
+  {id:11,media:1,gravidade:'Baixa',gravidadeN:1},
+  {id:12,media:1.75,gravidade:'Média',gravidadeN:2},
+  {id:13,media:2.33,gravidade:'Alta',gravidadeN:3}
+ ];
+ function seedDrps(p){
+  const KEY='ff_sst_v8_drps';
+  const token=p.drpsToken||'dvilla_borghese';
+  let all=[];
+  try{ all=JSON.parse(localStorage.getItem(KEY)||'[]'); }catch(e){ all=[]; }
+  all=all.filter(r=>r.condominioId!==p.id && r.token!==token && !String(r.id||'').startsWith('drps_villa_'));
+  if(!p.drpsToken){
+   p.drpsToken=token;
+   V8Storage.save(p,{ativo:false});
+  }
+  const recs=DRPS_FORMS.map((rec,i)=>{
+   const answers={};
+   rec.a.forEach((v,idx)=>{ answers[idx+1]=v; });
+   return {
+    id:'drps_villa_'+(i+1),
+    token,
+    condominioId:p.id,
+    condominio:NOME,
+    funcao:rec.f,
+    setor:rec.s,
+    answers,
+    ts:rec.ts
+   };
+  });
+  localStorage.setItem(KEY,JSON.stringify(recs.concat(all)));
+ }
+ function overlay(d,list){
+  list=Array.isArray(list)?list:[];
+  if(!d||!d.n) return d;
+  if(list.length!==DRPS_FORMS.length) return d;
+  if(!list.every(r=>String(r.id||'').startsWith('drps_villa_'))) return d;
+  return DRPSData.applyResumo(d, DRPS_RESUMO);
+ }
  function run(){
   let p=findCondo();
   if(!p){
@@ -136,8 +195,9 @@ const SeedVilla=(()=>{
    V8Storage.save(p);
   }
   saveReport(p);
+  seedDrps(p);
   localStorage.setItem(FLAG,'1');
   return p;
  }
- return {run};
+ return {run,overlay};
 })();
