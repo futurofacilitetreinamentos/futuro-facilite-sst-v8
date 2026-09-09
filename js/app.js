@@ -30,11 +30,25 @@ function init(){
  $('importDrpsBtn')?.addEventListener('click',importDrpsPasted);
  $('drpsCondoLinks')?.addEventListener('click',onDrpsCondoLinksClick);
  seedEquipe();
- SeedVilla.run();
- if(typeof SeedLira!=='undefined') SeedLira.run();
- const saved=V8Storage.ativo();
- if(saved) apply(saved,true);
+ removeSeededLira();
+ const villa=SeedVilla.run();
+ if(villa) apply(villa,true);
+ else{
+  const saved=V8Storage.ativo();
+  if(saved) apply(saved,true);
+ }
  renderAll();
+}
+function removeSeededLira(){
+ const ids=V8Storage.list().filter(p=>p.id==='condo_dona_lira_ii' || /dona lira/i.test(p.empresa?.razaoSocial||'') || String(p.empresa?.cnpj||'').replace(/\D/g,'')==='09584230000110').map(p=>p.id);
+ ids.forEach(id=>V8Storage.remove(id));
+ try{
+  const KEY='ff_sst_v7_reports';
+  const all=JSON.parse(localStorage.getItem(KEY)||'[]').filter(r=>r.id!=='insp_lira_2026_0304' && r.condominioId!=='condo_dona_lira_ii' && !/dona lira/i.test(r.condominio||''));
+  localStorage.setItem(KEY,JSON.stringify(all));
+ }catch(e){}
+ localStorage.removeItem('ff_sst_v8_seed_dona_lira_ii');
+ if(typeof V8Storage.removeEquipe==='function') V8Storage.removeEquipe('eq_med_leticia');
 }
 function hasCadastro(){return !!(project.empresa?.razaoSocial||$('razaoSocial')?.value)}
 function condoName(){return project.empresa?.razaoSocial||'Condomínio sem nome'}
@@ -206,7 +220,7 @@ function pushInspectionContext(){
 function openInspecao(){
  const f=$('inspecaoFrame');
  if(!f) return;
- const src=new URL('inspecao/index.html?v=8.25', document.baseURI).href;
+ const src=new URL('inspecao/index.html?v=8.26', document.baseURI).href;
  if(f.dataset.loaded!=='1'){
   f.onload=()=>pushInspectionContext();
   f.src=src;
@@ -422,15 +436,6 @@ function seedEquipe(){
   nome:'Sthefany Thiara Martins de Sousa',
   funcao:'Engenheira de Segurança do Trabalho',
   registro:'25958/D-DF',
-  rqe:'',
-  telefone:'',
-  email:''
- },{
-  id:'eq_med_leticia',
-  tipo:'medico',
-  nome:'Dra. Leticia de Lara Rocha Silva',
-  funcao:'Médico responsável',
-  registro:'31140/DF',
   rqe:'',
   telefone:'',
   email:''
