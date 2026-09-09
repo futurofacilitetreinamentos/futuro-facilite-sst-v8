@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#075e45">
 <title>Futuro Facilite SST V8</title>
-<script>if(window.self!==window.top){location.replace(new URL('inspecao/index.html?v=8.13',location.href).href)}</script>
-<link rel="stylesheet" href="css/style.css?v=8.13">
-<link rel="stylesheet" href="css/report.css?v=8.13">
+<script>if(window.self!==window.top){location.replace(new URL('inspecao/index.html?v=8.14',location.href).href)}</script>
+<link rel="stylesheet" href="css/style.css?v=8.14">
+<link rel="stylesheet" href="css/report.css?v=8.14">
 </head>
 <body>
 <div id="loginScreen" class="login-screen">
@@ -257,11 +257,14 @@
     </section>
 
     <section id="view-pcmso" class="view">
-      <div class="module-coming">
-        <div class="big-icon">🩺</div><h2>PCMSO — módulo médico</h2>
-        <p>Estrutura já reservada para receber automaticamente os riscos classificados no PGR e disponibilizá-los ao Médico do Trabalho para elaboração, revisão e aprovação do PCMSO.</p>
-        <div class="coming-grid"><span>Riscos por função</span><span>Exames ocupacionais</span><span>Periodicidades</span><span>ASO</span><span>Relatório analítico</span><span>Aprovação médica</span></div>
-        <b>Próxima etapa da V8</b>
+      <div class="panel">
+        <div class="panel-head"><div><span class="eyebrow">NR-7</span><h2>PCMSO</h2></div><div class="actions"><button class="outline" type="button" id="previewPcmso">Prévia</button><button class="dark" type="button" id="printPcmso">Gerar PDF</button></div></div>
+        <div class="notice">O PCMSO monta o quadro de exames a partir dos riscos do PGR e do médico selecionado no condomínio. O Médico do Trabalho deve revisar e aprovar antes da entrega.</div>
+        <div id="pcmsoSummary"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div><span class="eyebrow">EXAMES</span><h2>Quadro ocupacional por função</h2></div></div>
+        <div id="pcmsoExames"></div>
       </div>
     </section>
 
@@ -312,12 +315,13 @@
 </div>
 
 <div id="modal" class="modal-backdrop hidden"><div class="modal"><div class="modal-head"><h2 id="modalTitle">Cadastro</h2><button id="closeModal" class="danger">Fechar</button></div><div id="modalBody"></div></div></div>
-<div id="reportModal" class="modal-backdrop hidden"><div class="modal report-modal"><div class="modal-head"><h2>Prévia do PGR</h2><div><button id="printFromPreview" class="dark">Imprimir / PDF</button><button id="closeReport" class="danger">Fechar</button></div></div><div id="reportPreview" class="report-preview"></div></div></div>
+<div id="reportModal" class="modal-backdrop hidden"><div class="modal report-modal"><div class="modal-head"><h2 id="reportModalTitle">Prévia do documento</h2><div><button id="printFromPreview" class="dark">Imprimir / PDF</button><button id="closeReport" class="danger">Fechar</button></div></div><div id="reportPreview" class="report-preview"></div></div></div>
 
-<script src="js/auth.js?v=8.13"></script>
-<script src="js/storage.js?v=8.13"></script>
-<script src="js/drps-data.js?v=8.13"></script>
-<script src="js/report.js?v=8.13"></script>
-<script src="js/app.js?v=8.13"></script>
+<script src="js/auth.js?v=8.14"></script>
+<script src="js/storage.js?v=8.14"></script>
+<script src="js/drps-data.js?v=8.14"></script>
+<script src="js/pcmso.js?v=8.14"></script>
+<script src="js/report.js?v=8.14"></script>
+<script src="js/app.js?v=8.14"></script>
 </body>
 </html>

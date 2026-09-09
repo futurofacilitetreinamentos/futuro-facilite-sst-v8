@@ -2,7 +2,7 @@
 let project=V8Storage.blank();
 const $=id=>document.getElementById(id);
 const empFields=['razaoSocial','nomeFantasia','cnpj','cnae','grauRisco','numTrabalhadores','endereco','responsavelEmpresa','contatoEmpresa','emailEmpresa','dataElaboracao','atividadeEmpresa','respSst','funcaoRespSst','regSst','medicoTrabalho','crmMedico','engSeguranca','creaEng','respSstId','medicoId','engId'];
-const needsCadastro=['agenda','inspecao','setores','funcoes','ghe','riscos','plano','pgr','nr1','laudos'];
+const needsCadastro=['agenda','inspecao','setores','funcoes','ghe','riscos','plano','pgr','nr1','laudos','pcmso'];
 
 function init(){
  $('dataElaboracao').value=new Date().toISOString().slice(0,10);
@@ -17,7 +17,7 @@ function init(){
   const tipo=inp.closest('label')?.querySelector('[data-pick]')?.dataset.pick;
   if(tipo) openPickEquipe(tipo);
  }));
- $('closeModal').onclick=closeModal;$('previewPgr').onclick=previewPgr;$('printPgr').onclick=()=>V8Report.print(collect());$('closeReport').onclick=closeReport;$('printFromPreview').onclick=()=>V8Report.print(window._previewProject||collect());
+ $('closeModal').onclick=closeModal;$('previewPgr').onclick=previewPgr;$('printPgr').onclick=()=>V8Report.print(collect());$('previewPcmso')?.addEventListener('click',previewPcmso);$('printPcmso')?.addEventListener('click',()=>printPcmsoDoc());$('closeReport').onclick=closeReport;$('printFromPreview').onclick=printFromPreview;
  $('cnpj').oninput=e=>e.target.value=formatCNPJ(e.target.value);
  $('addUserBtn').onclick=addAccessUser;$('changePassBtn').onclick=changeMyPassword;
  $('newUserCpf')?.addEventListener('input',e=>e.target.value=FFAuth.formatCPF(e.target.value));
@@ -58,6 +58,7 @@ function openView(v,btn){
  if(v==='agenda') renderAgenda();
  if(v==='plano') renderPlano();
  if(v==='pgr') renderPgrSummary();
+ if(v==='pcmso') renderPcmso();
  if(v==='nr1') renderNr1();
  if(v==='laudos') renderLaudos();
  if(v==='acessos') renderAcessos();
@@ -179,7 +180,7 @@ function pushInspectionContext(){
 function openInspecao(){
  const f=$('inspecaoFrame');
  if(!f) return;
- const src=new URL('inspecao/index.html?v=8.13', document.baseURI).href;
+ const src=new URL('inspecao/index.html?v=8.14', document.baseURI).href;
  if(f.dataset.loaded!=='1'){
   f.onload=()=>pushInspectionContext();
   f.src=src;
@@ -287,14 +288,23 @@ function renderLaudos(){
     ? `<button class="outline" data-act="prev-pgr">Prévia</button><button class="dark" data-act="pdf-pgr">Gerar PDF</button>`
     : `<button class="primary" data-act="go-cad">Cadastrar condomínio</button>`
   },
-  {title:'PCMSO', meta:'Módulo médico em preparação', ready:false, actions:'<button class="outline" disabled>Em breve</button>'},
+  {
+   title:'PCMSO / NR-7',
+   meta:st.cadastro?(project.empresa?.medicoTrabalho?'Usa o médico do condomínio e os riscos do PGR':'Selecione o médico no cadastro do condomínio'):'Cadastre o condomínio',
+   ready:st.cadastro && !!project.empresa?.medicoTrabalho,
+   actions: st.cadastro
+    ? `<button class="outline" data-act="prev-pcmso">Prévia</button><button class="dark" data-act="pdf-pcmso">Gerar PDF</button>`
+    : `<button class="primary" data-act="go-cad">Cadastrar condomínio</button>`
+  },
   {title:'LTCAT', meta:'Módulo previdenciário em preparação', ready:false, actions:'<button class="outline" disabled>Em breve</button>'}
  ];
  root.innerHTML=cards.map(c=>`<article class="laudo-card ${c.ready?'ready':''}"><span class="eyebrow">${c.ready?'PRONTO':'PENDENTE'}</span><h3>${c.title}</h3><p>${V8Report.esc(c.meta)}</p><div class="actions">${c.actions}</div></article>`).join('');
  root.querySelector('[data-act="go-insp"]')?.addEventListener('click',()=>go('inspecao'));
- root.querySelector('[data-act="go-cad"]')?.addEventListener('click',()=>go('empresa'));
+ root.querySelectorAll('[data-act="go-cad"]').forEach(b=>b.addEventListener('click',()=>go('empresa')));
  root.querySelector('[data-act="prev-pgr"]')?.addEventListener('click',previewPgr);
  root.querySelector('[data-act="pdf-pgr"]')?.addEventListener('click',()=>V8Report.print(collect()));
+ root.querySelector('[data-act="prev-pcmso"]')?.addEventListener('click',previewPcmso);
+ root.querySelector('[data-act="pdf-pcmso"]')?.addEventListener('click',()=>printPcmsoDoc());
  root.querySelector('[data-act="prev-insp"]')?.addEventListener('click',()=>emitInspecao('preview'));
  root.querySelector('[data-act="pdf-insp"]')?.addEventListener('click',()=>emitInspecao('pdf'));
 }
@@ -477,7 +487,46 @@ function renderPgrSummary(){
  $('pgrSummary').innerHTML=`<div class="cards metrics" style="grid-template-columns:repeat(5,1fr)"><article><b>${p.setores.length}</b><span>Setores</span></article><article><b>${p.ghe.length}</b><span>GHEs</span></article><article><b>${p.riscos.length}</b><span>Riscos</span></article><article><b>${high}</b><span>Altos/críticos</span></article><article><b>${d.n||0}</b><span>DRPS respostas</span></article></div>
  <div class="notice" style="margin-top:12px">${d.n?`O PGR inclui o resultado coletivo do DRPS (${d.n} resposta(s); ${(d.altos||[]).length} tópico(s) com gravidade alta).`:'O PGR reserva a seção de riscos psicossociais. Quando houver respostas do DRPS, o resultado entra automaticamente no documento.'}</div>`;
 }
-function previewPgr(){const p=collect();if(!p.empresa.razaoSocial)return alert('Cadastre o condomínio primeiro.');window._previewProject=p;$('reportPreview').innerHTML=V8Report.build(p);$('reportModal').classList.remove('hidden')}
+function previewPgr(){const p=collect();if(!p.empresa.razaoSocial)return alert('Cadastre o condomínio primeiro.');window._previewKind='pgr';window._previewProject=p;if($('reportModalTitle'))$('reportModalTitle').textContent='Prévia do PGR';$('reportPreview').innerHTML=V8Report.build(p);$('reportModal').classList.remove('hidden')}
+function previewPcmso(){
+ const p=collect();
+ if(!p.empresa.razaoSocial)return alert('Cadastre o condomínio primeiro.');
+ if(!p.empresa.medicoTrabalho)return alert('Selecione o Médico do Trabalho no cadastro do condomínio.');
+ window._previewKind='pcmso';window._previewProject=p;
+ if($('reportModalTitle'))$('reportModalTitle').textContent='Prévia do PCMSO';
+ $('reportPreview').innerHTML=V8Report.buildPcmso(p);$('reportModal').classList.remove('hidden');
+}
+function printPcmsoDoc(){
+ const p=collect();
+ if(!p.empresa.razaoSocial)return alert('Cadastre o condomínio primeiro.');
+ if(!p.empresa.medicoTrabalho)return alert('Selecione o Médico do Trabalho no cadastro do condomínio.');
+ V8Report.printPcmso(p);
+}
+function printFromPreview(){
+ const p=window._previewProject||collect();
+ if(window._previewKind==='pcmso') V8Report.printPcmso(p);
+ else V8Report.print(p);
+}
+function renderPcmso(){
+ const p=collect();
+ const plan=PCMSOData.plan(p);
+ const med=plan.medico||{};
+ const sum=$('pcmsoSummary');
+ if(sum){
+  const okMed=!!med.nome;
+  const okRiscos=(p.riscos||[]).length>0;
+  sum.innerHTML=`<div class="cards metrics" style="grid-template-columns:repeat(4,1fr)"><article><b>${plan.nFuncoes||0}</b><span>Funções</span></article><article><b>${plan.nExames||0}</b><span>Exames no quadro</span></article><article><b>${(p.riscos||[]).length}</b><span>Riscos do PGR</span></article><article><b>${okMed?'Sim':'Não'}</b><span>Médico definido</span></article></div>
+  <div class="notice" style="margin-top:12px">${okMed?`Coordenador: <b>${V8Report.esc(med.nome)}</b>${med.crm?' · CRM '+V8Report.esc(med.crm):''}.`:'Selecione o médico no cadastro do condomínio (seta em Médico do Trabalho).'} ${okRiscos?'O quadro de exames segue os riscos do inventário.':'Cadastre o inventário de riscos para especializar os exames.'}</div>`;
+ }
+ const root=$('pcmsoExames');
+ if(!root) return;
+ if(!plan.byFunc.length){ root.innerHTML='<div class="notice">Cadastre funções ou riscos para montar o quadro.</div>'; return; }
+ root.innerHTML=plan.byFunc.map(f=>{
+  const riscos=f.riscos.length?f.riscos.map(r=>V8Report.esc(r.perigo||r.grupo)).join(', '):'Exame clínico de base (NR-7)';
+  const rows=f.exames.map(e=>`<tr><td>${V8Report.esc(e.exame)}</td><td>${V8Report.esc(e.tipos)}</td><td>${V8Report.esc(e.periodo)}</td><td>${V8Report.esc(e.motivo)}</td></tr>`).join('');
+  return `<div class="entity-card"><div class="entity-title">${V8Report.esc(f.funcao)}${f.qtd?' · '+V8Report.esc(f.qtd)+' trabalhador(es)':''}</div><div class="entity-meta">${V8Report.esc(f.setor||'')} · Riscos: ${riscos}</div><table class="table" style="margin-top:8px"><thead><tr><th>Exame</th><th>Tipos</th><th>Periodicidade</th><th>Indicador</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+ }).join('');
+}
 function drpsUrl(){
  V8Storage.ensureDrpsToken(project);
  return new URL('drps.html?c='+encodeURIComponent(project.drpsToken), document.baseURI).href;
