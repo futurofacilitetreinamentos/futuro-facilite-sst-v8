@@ -1,7 +1,7 @@
 
 let project=V8Storage.blank();
 const $=id=>document.getElementById(id);
-const empFields=['razaoSocial','nomeFantasia','cnpj','cnae','grauRisco','numTrabalhadores','endereco','responsavelEmpresa','contatoEmpresa','emailEmpresa','dataElaboracao','atividadeEmpresa','respSst','funcaoRespSst','medicoTrabalho','crmMedico','engSeguranca','creaEng'];
+const empFields=['razaoSocial','nomeFantasia','cnpj','cnae','grauRisco','numTrabalhadores','endereco','responsavelEmpresa','contatoEmpresa','emailEmpresa','dataElaboracao','atividadeEmpresa','respSst','funcaoRespSst','regSst','medicoTrabalho','crmMedico','engSeguranca','creaEng','respSstId','medicoId','engId'];
 const needsCadastro=['agenda','inspecao','setores','funcoes','ghe','riscos','plano','pgr','nr1','laudos'];
 
 function init(){
@@ -9,6 +9,14 @@ function init(){
  document.querySelectorAll('#menu button').forEach(b=>b.onclick=()=>openView(b.dataset.view,b));
  $('newProjectBtn').onclick=newProject;$('saveProjectBtn').onclick=saveProject;
  $('addSetor').onclick=()=>openEntityModal('setor');$('addFuncao').onclick=()=>openEntityModal('funcao');$('addGhe').onclick=()=>openEntityModal('ghe');$('addRisco').onclick=()=>openEntityModal('risco');
+ $('addSst')?.addEventListener('click',()=>openEquipeModal('sst'));
+ $('addMedico')?.addEventListener('click',()=>openEquipeModal('medico'));
+ $('addEng')?.addEventListener('click',()=>openEquipeModal('engenheiro'));
+ document.querySelectorAll('[data-pick]').forEach(b=>b.addEventListener('click',()=>openPickEquipe(b.dataset.pick)));
+ document.querySelectorAll('.pick-wrap input').forEach(inp=>inp.addEventListener('click',()=>{
+  const tipo=inp.closest('label')?.querySelector('[data-pick]')?.dataset.pick;
+  if(tipo) openPickEquipe(tipo);
+ }));
  $('closeModal').onclick=closeModal;$('previewPgr').onclick=previewPgr;$('printPgr').onclick=()=>V8Report.print(collect());$('closeReport').onclick=closeReport;$('printFromPreview').onclick=()=>V8Report.print(window._previewProject||collect());
  $('cnpj').oninput=e=>e.target.value=formatCNPJ(e.target.value);
  $('addUserBtn').onclick=addAccessUser;$('changePassBtn').onclick=changeMyPassword;
@@ -19,10 +27,10 @@ function init(){
  $('openDrpsLink')?.addEventListener('click',()=>window.open(drpsUrl(),'_blank'));
  $('exportDrpsCsv')?.addEventListener('click',exportDrpsCsv);
  const saved=V8Storage.ativo();
+ seedEquipe();
  if(saved) apply(saved,true);
  else{
   const session=FFAuth.session();
-  $('respSst').value=session?.name||'Francson Menezes Alves';
   $('agTecnico').value=session?.name||'';
  }
  renderAll();
@@ -43,7 +51,7 @@ function openView(v,btn){
  viewEl.classList.add('active');
  document.querySelectorAll('#menu button').forEach(x=>x.classList.remove('active'));
  (btn||document.querySelector(`[data-view="${v}"]`))?.classList.add('active');
- const names={dashboard:'Atendimento',inspecao:'Inspeção SST',empresa:'Condomínio',agenda:'Agenda',setores:'Setores',funcoes:'Funções',ghe:'GHE',riscos:'Inventário de riscos',plano:'Plano de ação',pgr:'PGR / NR-1',nr1:'NR-1 / DRPS',laudos:'Laudos',pcmso:'PCMSO',ltcat:'LTCAT',acessos:'Minha conta'};
+ const names={dashboard:'Atendimento',inspecao:'Inspeção SST',empresa:'Condomínio',equipe:'Equipe técnica',agenda:'Agenda',setores:'Setores',funcoes:'Funções',ghe:'GHE',riscos:'Inventário de riscos',plano:'Plano de ação',pgr:'PGR / NR-1',nr1:'NR-1 / DRPS',laudos:'Laudos',pcmso:'PCMSO',ltcat:'LTCAT',acessos:'Minha conta'};
  $('pageTitle').textContent=names[v]||v;
  document.body.classList.toggle('inspecao-open',v==='inspecao');
  if(v==='inspecao') openInspecao();
@@ -53,10 +61,11 @@ function openView(v,btn){
  if(v==='nr1') renderNr1();
  if(v==='laudos') renderLaudos();
  if(v==='acessos') renderAcessos();
+ if(v==='equipe') renderEquipe();
 }
 function formatCNPJ(value){const d=String(value||'').replace(/\D/g,'').slice(0,14);if(d.length<=2)return d;if(d.length<=5)return d.slice(0,2)+'.'+d.slice(2);if(d.length<=8)return d.slice(0,2)+'.'+d.slice(2,5)+'.'+d.slice(5);if(d.length<=12)return d.slice(0,2)+'.'+d.slice(2,5)+'.'+d.slice(5,8)+'/'+d.slice(8);return d.slice(0,2)+'.'+d.slice(2,5)+'.'+d.slice(5,8)+'/'+d.slice(8,12)+'-'+d.slice(12)}
 function collect(){
- empFields.forEach(f=>project.empresa[f]=$(f).value);
+ empFields.forEach(f=>project.empresa[f]=$(f)?.value||'');
  project.agenda=Array.isArray(project.agenda)?project.agenda:[];
  project.salvoEm=new Date().toLocaleString('pt-BR');
  const snap=JSON.parse(JSON.stringify(project));
@@ -68,6 +77,9 @@ function apply(p,silent){
  project.agenda=Array.isArray(project.agenda)?project.agenda:[];
  empFields.forEach(f=>$(f).value=project.empresa?.[f]||'');
  if(!project.empresa?.dataElaboracao) $('dataElaboracao').value=new Date().toISOString().slice(0,10);
+ if(!project.empresa?.respSstId){ $('respSst').value=''; $('funcaoRespSst').value=''; $('regSst').value=''; }
+ if(!project.empresa?.medicoId){ $('medicoTrabalho').value=''; $('crmMedico').value=''; }
+ if(!project.empresa?.engId){ $('engSeguranca').value=''; $('creaEng').value=''; }
  $('projectLabel').textContent=project.empresa?.razaoSocial||'Cadastre o condomínio para iniciar';
  V8Storage.setAtivo(project.id);
  if(!silent) renderAll();
@@ -95,8 +107,6 @@ function newProject(){
  empFields.forEach(f=>$(f).value='');
  const session=FFAuth.session();
  $('dataElaboracao').value=new Date().toISOString().slice(0,10);
- $('respSst').value=session?.name||'Francson Menezes Alves';
- $('funcaoRespSst').value='Técnico de Segurança do Trabalho';
  $('agTecnico').value=session?.name||'';
  $('projectLabel').textContent='Novo condomínio';
  V8Storage.setAtivo(project.id);
@@ -169,7 +179,7 @@ function pushInspectionContext(){
 function openInspecao(){
  const f=$('inspecaoFrame');
  if(!f) return;
- const src=new URL('inspecao/index.html?v=8.7', document.baseURI).href;
+ const src=new URL('inspecao/index.html?v=8.12', document.baseURI).href;
  if(f.dataset.loaded!=='1'){
   f.onload=()=>pushInspectionContext();
   f.src=src;
@@ -177,7 +187,7 @@ function openInspecao(){
  }else pushInspectionContext();
 }
 function renderAll(){
- renderSetores();renderFuncoes();renderGhe();renderRiscos();renderPlano();renderDashboard();renderCondoSelect();renderAgenda();
+ renderSetores();renderFuncoes();renderGhe();renderRiscos();renderPlano();renderDashboard();renderCondoSelect();renderAgenda();renderEquipe();
 }
 function renderDashboard(){
  const highs=project.riscos.filter(r=>Number(r.prob)*Number(r.sev)>=10).length;
@@ -213,6 +223,8 @@ function renderAgenda(){
  const session=FFAuth.session();
  if($('agTecnico') && !$('agTecnico').value) $('agTecnico').value=session?.name||'';
  if($('agData') && !$('agData').value) $('agData').value=new Date().toISOString().slice(0,10);
+ const dl=$('sstTecnicos');
+ if(dl) dl.innerHTML=V8Storage.equipeByTipo('sst').map(x=>`<option value="${V8Report.esc(x.nome)}"></option>`).join('');
  const root=$('agendaList');
  if(!root) return;
  const list=(project.agenda||[]).slice().sort((a,b)=>(b.data||'').localeCompare(a.data||''));
@@ -327,6 +339,130 @@ function renderFuncoes(){entityList($('funcoesList'),project.funcoes,'funcao',x=
 function renderGhe(){entityList($('gheList'),project.ghe,'ghe',x=>`${V8Report.esc(x.setor||'')} · ${V8Report.esc(x.funcoes||'')}`)}
 function renderRiscos(){const root=$('riscosList');root.innerHTML=project.riscos.length?'':'<div class="notice">Nenhum risco cadastrado.</div>';project.riscos.forEach((r,i)=>{const score=Number(r.prob)*Number(r.sev),lvl=V8Report.level(score),cl=lvl==='Baixo'?'baixo':lvl==='Moderado'?'moderado':lvl==='Alto'?'alto':'critico';const d=document.createElement('div');d.className='risk-row';d.innerHTML=`<div><b>${V8Report.esc(r.perigo)}</b><br><span>${V8Report.esc(r.ghe||r.funcao||'-')}</span></div><div>${V8Report.esc(r.grupo)}</div><div>P ${r.prob} × S ${r.sev}</div><div class="risk-level ${cl}">${lvl}</div><div>${V8Report.esc(r.status||'Pendente')}</div><div class="entity-actions"><button class="outline">Editar</button><button class="danger">Excluir</button></div>`;const bs=d.querySelectorAll('button');bs[0].onclick=()=>openEntityModal('risco',i);bs[1].onclick=()=>{if(confirm('Excluir este risco?')){project.riscos.splice(i,1);renderAll()}};root.appendChild(d)})}
 function renderPlano(){const rows=project.riscos.filter(r=>r.acao);$('planoTable').innerHTML=rows.length?`<table class="table"><thead><tr><th>Risco</th><th>Nível</th><th>Ação</th><th>Responsável</th><th>Prazo</th><th>Status</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${V8Report.esc(r.perigo)}</td><td>${V8Report.level(Number(r.prob)*Number(r.sev))}</td><td>${V8Report.esc(r.acao)}</td><td>${V8Report.esc(r.responsavel||'-')}</td><td>${V8Report.fmt(r.prazo)}</td><td>${V8Report.esc(r.status||'Pendente')}</td></tr>`).join('')}</tbody></table>`:'<div class="notice">Cadastre ações nos riscos do inventário para formar o plano de ação.</div>'}
+function seedEquipe(){
+ const defaults=[{
+  id:'eq_sst_daniel',
+  tipo:'sst',
+  nome:'Daniel Mateus da Silva de Holanda',
+  funcao:'Técnico de Segurança do Trabalho',
+  registro:'0010748/DF',
+  rqe:'',
+  telefone:'',
+  email:''
+ },{
+  id:'eq_med_elber',
+  tipo:'medico',
+  nome:'Dr. Elber Sampaio Vilanova',
+  funcao:'Médico responsável',
+  registro:'20773/DF',
+  rqe:'',
+  telefone:'',
+  email:''
+ },{
+  id:'eq_eng_sthefany',
+  tipo:'engenheiro',
+  nome:'Sthefany Thiara Martins de Sousa',
+  funcao:'Engenheira de Segurança do Trabalho',
+  registro:'25958/D-DF',
+  rqe:'',
+  telefone:'',
+  email:''
+ }];
+ const list=V8Storage.equipeList();
+ defaults.forEach(d=>{
+  const hit=list.find(x=>x.id===d.id)||list.find(x=>x.tipo===d.tipo && String(x.nome||'').toLowerCase()===d.nome.toLowerCase());
+  if(hit){
+   V8Storage.saveEquipe({...hit,...d,id:hit.id});
+   return;
+  }
+  V8Storage.saveEquipe({...d});
+ });
+}
+function applyEquipePick(tipo,person){
+ if(tipo==='sst'){
+  $('respSst').value=person?.nome||'';
+  $('funcaoRespSst').value=person?.funcao||(person?'Técnico de Segurança do Trabalho':'');
+  $('regSst').value=person?.registro||'';
+  $('respSstId').value=person?.id||'';
+ }
+ if(tipo==='medico'){
+  $('medicoTrabalho').value=person?.nome||'';
+  $('crmMedico').value=person?[person.registro,person.rqe].filter(Boolean).join(' / '):'';
+  $('medicoId').value=person?.id||'';
+ }
+ if(tipo==='engenheiro'){
+  $('engSeguranca').value=person?.nome||'';
+  $('creaEng').value=person?.registro||'';
+  $('engId').value=person?.id||'';
+ }
+}
+function openPickEquipe(tipo){
+ const titles={sst:'Selecionar responsável SST',medico:'Selecionar médico do trabalho',engenheiro:'Selecionar engenheiro de segurança'};
+ const list=V8Storage.equipeByTipo(tipo);
+ $('modalTitle').textContent=titles[tipo]||'Selecionar';
+ if(!list.length){
+  $('modalBody').innerHTML=`<div class="notice">Nenhum profissional cadastrado neste grupo.</div><div style="margin-top:14px;text-align:right"><button class="primary" type="button" id="goEquipeCad">Cadastrar em Equipe técnica</button></div>`;
+  $('goEquipeCad').onclick=()=>{closeModal();go('equipe');};
+  $('modal').classList.remove('hidden');
+  return;
+ }
+ const items=list.map(x=>`<button type="button" class="pick-item" data-id="${V8Report.esc(x.id)}"><b>${V8Report.esc(x.nome)}</b><span>${V8Report.esc(equipeMeta(x))}</span></button>`).join('');
+ $('modalBody').innerHTML=`<div class="pick-list">${items}<button type="button" class="outline" id="clearPick">Limpar seleção</button></div>`;
+ $('modalBody').querySelectorAll('[data-id]').forEach(b=>b.onclick=()=>{
+  applyEquipePick(tipo,V8Storage.equipeGet(b.dataset.id));
+  closeModal();
+ });
+ $('clearPick').onclick=()=>{applyEquipePick(tipo,null);closeModal();};
+ $('modal').classList.remove('hidden');
+}
+function equipeMeta(x){
+ if(x.tipo==='medico') return [x.registro?('CRM '+x.registro):'',x.rqe?('RQE '+x.rqe):'',x.email,x.telefone].filter(Boolean).join(' · ')||'Sem CRM informado';
+ if(x.tipo==='engenheiro') return [x.registro?('CREA '+x.registro):'',x.funcao,x.email,x.telefone].filter(Boolean).join(' · ')||'Sem CREA informado';
+ return [x.registro?('Registro '+x.registro):'',x.email,x.telefone].filter(Boolean).join(' · ')||'Sem registro informado';
+}
+function renderEquipeGroup(rootId,tipo){
+ const root=$(rootId);
+ if(!root) return;
+ const list=V8Storage.equipeByTipo(tipo);
+ if(!list.length){ root.innerHTML='<div class="notice">Nenhum profissional cadastrado neste grupo.</div>'; return; }
+ root.innerHTML=list.map(x=>`<div class="entity-card"><div class="entity-head"><div><div class="entity-title">${V8Report.esc(x.nome)}</div><div class="entity-meta">${V8Report.esc(equipeMeta(x))}</div></div><div class="entity-actions"><button class="outline" type="button" data-ed="${V8Report.esc(x.id)}">Editar</button><button class="danger" type="button" data-del="${V8Report.esc(x.id)}">Excluir</button></div></div></div>`).join('');
+ root.querySelectorAll('[data-ed]').forEach(b=>b.onclick=()=>openEquipeModal(tipo,b.dataset.ed));
+ root.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{
+  if(!confirm('Excluir este profissional da equipe?')) return;
+  V8Storage.removeEquipe(b.dataset.del);
+  renderEquipe();
+ });
+}
+function renderEquipe(){
+ renderEquipeGroup('equipeSstList','sst');
+ renderEquipeGroup('equipeMedicoList','medico');
+ renderEquipeGroup('equipeEngList','engenheiro');
+}
+function openEquipeModal(tipo,id){
+ const item=id?(V8Storage.equipeGet(id)||{tipo}):{tipo};
+ const titles={sst:'Responsável SST',medico:'Médico do Trabalho',engenheiro:'Engenheiro de Segurança'};
+ const funcDefault=tipo==='sst'?'Técnico de Segurança do Trabalho':tipo==='medico'?'Médico do Trabalho':'Engenheiro de Segurança do Trabalho';
+ const regLabel=tipo==='medico'?'CRM':tipo==='engenheiro'?'CREA':'Registro profissional';
+ $('modalTitle').textContent=(id?'Editar ':'Novo ')+titles[tipo];
+ $('modalBody').innerHTML=`<div class="form-grid two"><label>Nome completo<input id="eqNome" value="${V8Report.esc(item.nome||'')}"></label>${tipo==='sst'?`<label>Registro<input id="eqRegistro" value="${V8Report.esc(item.registro||'')}"></label><input type="hidden" id="eqFuncao" value="${V8Report.esc(item.funcao||funcDefault)}">`:`<label>Função / atribuição<input id="eqFuncao" value="${V8Report.esc(item.funcao||funcDefault)}"></label><label>${regLabel}<input id="eqRegistro" value="${V8Report.esc(item.registro||'')}"></label>`}${tipo==='medico'?`<label>RQE<input id="eqRqe" value="${V8Report.esc(item.rqe||'')}"></label>`:''}<label>Telefone<input id="eqTel" value="${V8Report.esc(item.telefone||'')}"></label><label>E-mail<input id="eqEmail" type="email" value="${V8Report.esc(item.email||'')}"></label></div><div style="margin-top:14px;text-align:right"><button class="primary" type="button" id="saveEquipeBtn">Salvar</button></div>`;
+ $('saveEquipeBtn').onclick=()=>{
+  const nome=$('eqNome').value.trim();
+  if(!nome) return alert('Informe o nome completo.');
+  V8Storage.saveEquipe({id:item.id||('eq_'+Date.now()),tipo,nome,funcao:$('eqFuncao').value.trim()||funcDefault,registro:$('eqRegistro').value.trim(),rqe:$('eqRqe')?.value.trim()||'',telefone:$('eqTel').value.trim(),email:$('eqEmail').value.trim()});
+  closeModal();
+  renderEquipe();
+  if($('respSstId')?.value){
+   const sst=V8Storage.equipeGet($('respSstId').value); if(sst) applyEquipePick('sst',sst);
+  }
+  if($('medicoId')?.value){
+   const med=V8Storage.equipeGet($('medicoId').value); if(med) applyEquipePick('medico',med);
+  }
+  if($('engId')?.value){
+   const eng=V8Storage.equipeGet($('engId').value); if(eng) applyEquipePick('engenheiro',eng);
+  }
+ };
+ $('modal').classList.remove('hidden');
+}
 function renderPgrSummary(){
  const p=collect(),high=p.riscos.filter(r=>Number(r.prob)*Number(r.sev)>=10).length,d=p.drps||{n:0,altos:[]};
  $('pgrSummary').innerHTML=`<div class="cards metrics" style="grid-template-columns:repeat(5,1fr)"><article><b>${p.setores.length}</b><span>Setores</span></article><article><b>${p.ghe.length}</b><span>GHEs</span></article><article><b>${p.riscos.length}</b><span>Riscos</span></article><article><b>${high}</b><span>Altos/críticos</span></article><article><b>${d.n||0}</b><span>DRPS respostas</span></article></div>

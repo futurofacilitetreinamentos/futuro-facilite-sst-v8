@@ -53,5 +53,20 @@ const V8Storage=(()=>{
   localStorage.setItem(DRPS,JSON.stringify(all));
   return rec;
  }
- return{list,save,get,remove,ativoId,setAtivo,ativo,blank,inspections,ensureDrpsToken,byDrpsToken,drpsList,saveDrps}
+ const EQUIPE='ff_sst_v8_equipe';
+ function equipeList(){try{return JSON.parse(localStorage.getItem(EQUIPE)||'[]')}catch(e){return[]}}
+ function equipeGet(id){return equipeList().find(x=>x.id===id)}
+ function equipeByTipo(tipo){return equipeList().filter(x=>x.tipo===tipo)}
+ function saveEquipe(p){
+  const a=equipeList();
+  if(!p.id) p.id='eq_'+Date.now();
+  const i=a.findIndex(x=>x.id===p.id);
+  if(i>=0)a[i]=p;else a.unshift(p);
+  localStorage.setItem(EQUIPE,JSON.stringify(a));
+  return p;
+ }
+ function removeEquipe(id){
+  localStorage.setItem(EQUIPE,JSON.stringify(equipeList().filter(x=>x.id!==id)));
+ }
+ return{list,save,get,remove,ativoId,setAtivo,ativo,blank,inspections,ensureDrpsToken,byDrpsToken,drpsList,saveDrps,equipeList,equipeGet,equipeByTipo,saveEquipe,removeEquipe}
 })();

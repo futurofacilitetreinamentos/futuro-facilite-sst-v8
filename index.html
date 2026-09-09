@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#075e45">
 <title>Futuro Facilite SST V8</title>
-<script>if(window.self!==window.top){location.replace(new URL('inspecao/index.html?v=8.7',location.href).href)}</script>
-<link rel="stylesheet" href="css/style.css?v=8.7">
-<link rel="stylesheet" href="css/report.css?v=8.7">
+<script>if(window.self!==window.top){location.replace(new URL('inspecao/index.html?v=8.12',location.href).href)}</script>
+<link rel="stylesheet" href="css/style.css?v=8.12">
+<link rel="stylesheet" href="css/report.css?v=8.12">
 </head>
 <body>
 <div id="loginScreen" class="login-screen">
@@ -47,6 +47,7 @@
     <nav id="menu">
       <button data-view="dashboard" class="active">▦ Atendimento</button>
       <button data-view="empresa">🏢 Condomínio</button>
+      <button data-view="equipe">👩‍⚕️ Equipe técnica</button>
       <button data-view="agenda">📅 Agenda</button>
       <button data-view="inspecao">☑ Inspeção SST</button>
       <button data-view="setores">▤ Setores</button>
@@ -122,14 +123,50 @@
       </div>
       <div class="panel">
         <div class="panel-head"><div><span class="eyebrow">RESPONSÁVEIS</span><h2>Equipe técnica</h2></div></div>
+        <div class="notice">Os campos começam vazios. Clique na seta ao lado do nome para escolher quem já está cadastrado em Equipe técnica. Registro, CRM e CREA preenchem sozinhos.</div>
         <div class="form-grid two">
-          <label>Responsável SST<input id="respSst" value="Francson Menezes Alves"></label>
-          <label>Função / atribuição<input id="funcaoRespSst" value="Técnico de Segurança do Trabalho"></label>
-          <label>Médico do Trabalho<input id="medicoTrabalho"></label>
-          <label>CRM / RQE<input id="crmMedico"></label>
-          <label>Engenheiro de Segurança<input id="engSeguranca"></label>
-          <label>CREA<input id="creaEng"></label>
+          <label>Responsável SST
+            <span class="pick-wrap">
+              <input id="respSst" readonly placeholder="Selecione">
+              <button type="button" class="pick-btn" data-pick="sst" aria-label="Selecionar responsável SST">▾</button>
+            </span>
+          </label>
+          <label>Registro<input id="regSst" readonly></label>
+          <label>Médico do Trabalho
+            <span class="pick-wrap">
+              <input id="medicoTrabalho" readonly placeholder="Selecione">
+              <button type="button" class="pick-btn" data-pick="medico" aria-label="Selecionar médico do trabalho">▾</button>
+            </span>
+          </label>
+          <label>CRM / RQE<input id="crmMedico" readonly></label>
+          <label>Engenheiro de Segurança
+            <span class="pick-wrap">
+              <input id="engSeguranca" readonly placeholder="Selecione">
+              <button type="button" class="pick-btn" data-pick="engenheiro" aria-label="Selecionar engenheiro de segurança">▾</button>
+            </span>
+          </label>
+          <label>CREA<input id="creaEng" readonly></label>
         </div>
+        <input type="hidden" id="funcaoRespSst">
+        <input type="hidden" id="respSstId">
+        <input type="hidden" id="medicoId">
+        <input type="hidden" id="engId">
+      </div>
+    </section>
+
+    <section id="view-equipe" class="view">
+      <div class="notice">Cadastro da equipe da Futuro Facilite. Os profissionais daqui são escolhidos em cada condomínio para constar no PGR, PCMSO e demais documentos.</div>
+      <div class="panel">
+        <div class="panel-head"><div><span class="eyebrow">SST</span><h2>Responsáveis SST</h2></div><button class="primary" type="button" id="addSst">+ Responsável SST</button></div>
+        <div id="equipeSstList"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div><span class="eyebrow">SAÚDE OCUPACIONAL</span><h2>Médicos do Trabalho</h2></div><button class="primary" type="button" id="addMedico">+ Médico do Trabalho</button></div>
+        <div id="equipeMedicoList"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div><span class="eyebrow">ENGENHARIA</span><h2>Engenheiros de Segurança</h2></div><button class="primary" type="button" id="addEng">+ Engenheiro de Segurança</button></div>
+        <div id="equipeEngList"></div>
       </div>
     </section>
 
@@ -140,7 +177,8 @@
         <div class="form-grid two">
           <label>Data da inspeção<input id="agData" type="date"></label>
           <label>Horário<input id="agHora" type="time"></label>
-          <label>Técnico responsável<input id="agTecnico"></label>
+          <label>Técnico responsável<input id="agTecnico" list="sstTecnicos"></label>
+          <datalist id="sstTecnicos"></datalist>
           <label class="span2">Observação<textarea id="agObs" placeholder="Acesso, contato no local, pontos de atenção..."></textarea></label>
         </div>
         <div class="actions" style="margin-top:12px"><button class="primary" id="agendarBtn" type="button">Agendar inspeção</button></div>
@@ -276,10 +314,10 @@
 <div id="modal" class="modal-backdrop hidden"><div class="modal"><div class="modal-head"><h2 id="modalTitle">Cadastro</h2><button id="closeModal" class="danger">Fechar</button></div><div id="modalBody"></div></div></div>
 <div id="reportModal" class="modal-backdrop hidden"><div class="modal report-modal"><div class="modal-head"><h2>Prévia do PGR</h2><div><button id="printFromPreview" class="dark">Imprimir / PDF</button><button id="closeReport" class="danger">Fechar</button></div></div><div id="reportPreview" class="report-preview"></div></div></div>
 
-<script src="js/auth.js?v=8.7"></script>
-<script src="js/storage.js?v=8.7"></script>
-<script src="js/drps-data.js?v=8.7"></script>
-<script src="js/report.js?v=8.7"></script>
-<script src="js/app.js?v=8.7"></script>
+<script src="js/auth.js?v=8.12"></script>
+<script src="js/storage.js?v=8.12"></script>
+<script src="js/drps-data.js?v=8.12"></script>
+<script src="js/report.js?v=8.12"></script>
+<script src="js/app.js?v=8.12"></script>
 </body>
 </html>
