@@ -17,7 +17,7 @@ function init(){
   const tipo=inp.closest('label')?.querySelector('[data-pick]')?.dataset.pick;
   if(tipo) handlePick(tipo);
  }));
- $('closeModal').onclick=closeModal;$('previewPgr').onclick=previewPgr;$('printPgr').onclick=()=>V8Report.print(collect());$('previewPcmso')?.addEventListener('click',previewPcmso);$('printPcmso')?.addEventListener('click',()=>printPcmsoDoc());$('previewLtcat')?.addEventListener('click',previewLtcat);$('printLtcat')?.addEventListener('click',()=>printLtcatDoc());$('closeReport').onclick=closeReport;$('printFromPreview').onclick=printFromPreview;
+ $('closeModal').onclick=closeModal;$('previewPgr').onclick=previewPgr;$('printPgr').onclick=()=>V8Report.print(collect());$('previewPcmso')?.addEventListener('click',previewPcmso);$('printPcmso')?.addEventListener('click',()=>printPcmsoDoc());$('previewLtcat')?.addEventListener('click',previewLtcat);$('printLtcat')?.addEventListener('click',()=>printLtcatDoc());$('previewNr1')?.addEventListener('click',previewNr1);$('printNr1')?.addEventListener('click',()=>printNr1Doc());$('closeReport').onclick=closeReport;$('printFromPreview').onclick=printFromPreview;
  $('cnpj').oninput=e=>e.target.value=formatCNPJ(e.target.value);
  $('addUserBtn').onclick=addAccessUser;$('changePassBtn').onclick=changeMyPassword;
  $('newUserCpf')?.addEventListener('input',e=>e.target.value=FFAuth.formatCPF(e.target.value));
@@ -183,7 +183,7 @@ function pushInspectionContext(){
 function openInspecao(){
  const f=$('inspecaoFrame');
  if(!f) return;
- const src=new URL('inspecao/index.html?v=8.17', document.baseURI).href;
+ const src=new URL('inspecao/index.html?v=8.21', document.baseURI).href;
  if(f.dataset.loaded!=='1'){
   f.onload=()=>pushInspectionContext();
   f.src=src;
@@ -289,6 +289,14 @@ function renderLaudos(){
     : `<button class="primary" data-act="go-cad">Cadastrar condomínio</button>`
   },
   {
+   title:'NR-1 / DRPS',
+   meta:st.cadastro?'Diagnóstico coletivo de riscos psicossociais (resultado do formulário)':'Cadastre o condomínio',
+   ready:st.cadastro,
+   actions: st.cadastro
+    ? `<button class="outline" data-act="prev-nr1">Prévia</button><button class="dark" data-act="pdf-nr1">Gerar PDF</button>`
+    : `<button class="primary" data-act="go-cad">Cadastrar condomínio</button>`
+  },
+  {
    title:'PCMSO / NR-7',
    meta:st.cadastro?(project.empresa?.medicoTrabalho?'Usa o médico do condomínio e os riscos do PGR':'Selecione o médico no cadastro do condomínio'):'Cadastre o condomínio',
    ready:st.cadastro && !!project.empresa?.medicoTrabalho,
@@ -310,6 +318,8 @@ function renderLaudos(){
  root.querySelectorAll('[data-act="go-cad"]').forEach(b=>b.addEventListener('click',()=>go('empresa')));
  root.querySelector('[data-act="prev-pgr"]')?.addEventListener('click',previewPgr);
  root.querySelector('[data-act="pdf-pgr"]')?.addEventListener('click',()=>V8Report.print(collect()));
+ root.querySelector('[data-act="prev-nr1"]')?.addEventListener('click',previewNr1);
+ root.querySelector('[data-act="pdf-nr1"]')?.addEventListener('click',()=>printNr1Doc());
  root.querySelector('[data-act="prev-pcmso"]')?.addEventListener('click',previewPcmso);
  root.querySelector('[data-act="pdf-pcmso"]')?.addEventListener('click',()=>printPcmsoDoc());
  root.querySelector('[data-act="prev-ltcat"]')?.addEventListener('click',previewLtcat);
@@ -557,7 +567,20 @@ function printFromPreview(){
  const p=window._previewProject||collect();
  if(window._previewKind==='pcmso') V8Report.printPcmso(p);
  else if(window._previewKind==='ltcat') V8Report.printLtcat(p);
+ else if(window._previewKind==='nr1') V8Report.printNr1(p);
  else V8Report.print(p);
+}
+function previewNr1(){
+ const p=collect();
+ if(!p.empresa.razaoSocial)return alert('Cadastre o condomínio primeiro.');
+ window._previewKind='nr1';window._previewProject=p;
+ if($('reportModalTitle'))$('reportModalTitle').textContent='Prévia do NR-1 / DRPS';
+ $('reportPreview').innerHTML=V8Report.buildNr1(p);$('reportModal').classList.remove('hidden');
+}
+function printNr1Doc(){
+ const p=collect();
+ if(!p.empresa.razaoSocial)return alert('Cadastre o condomínio primeiro.');
+ V8Report.printNr1(p);
 }
 function previewLtcat(){
  const p=collect();

@@ -1,6 +1,7 @@
 
 const PCMSOData=(()=>{
- const BASE={exame:'Exame clínico ocupacional (anamnese e exame físico)',tipos:'A / P / R / M / D',periodo:'Anual',motivo:'NR-7 — avaliação clínica de todos os trabalhadores'};
+ const BASE={exame:'Avaliação clínica ocupacional',esocial:'0295',tipos:'A / P / R / M / D',periodo:'Anual',motivo:'NR-7 — avaliação clínica de todos os trabalhadores'};
+ const HEMO={exame:'Hemograma completo',esocial:'0693',tipos:'A / P / D',periodo:'Anual',motivo:'Exame complementar de base (eSocial tabela 27)'};
  function addUnique(arr,item){
   if(!arr.some(x=>x.exame===item.exame)) arr.push(item);
  }
@@ -10,19 +11,19 @@ const PCMSOData=(()=>{
   const f=String(funcao||r.funcao||r.ghe||'').toLowerCase();
   const list=[];
   if(/ru[ií]do|auditiv|barulho/.test(p+f) || /porteiro|vigilante/.test(f))
-   list.push({exame:'Audiometria tonal',tipos:'A / P / D',periodo:'Anual',motivo:r.perigo||'Exposição a ruído / comunicação no trabalho'});
+   list.push({exame:'Audiometria tonal',esocial:'0281',tipos:'A / P / D',periodo:'Anual',motivo:r.perigo||'Exposição a ruído / comunicação no trabalho'});
   if(/poeira|fumos|vapor|químico|cloro|limpeza|solvente|gás|produto qu[ií]m/.test(p) || g.includes('quím'))
-   list.push({exame:'Espirometria',tipos:'A / P / D',periodo:'Anual',motivo:r.perigo||'Risco químico / respiratório'});
+   list.push({exame:'Espirometria',esocial:'0523',tipos:'A / P / D',periodo:'Anual',motivo:r.perigo||'Risco químico / respiratório'});
   if(/biol|esgoto|lixo|res[ií]duo|secre|limpeza|jardin|fossa/.test(p+f) || g.includes('biol'))
-   list.push({exame:'Avaliação de risco biológico e atualização vacinal',tipos:'A / P',periodo:'Anual',motivo:r.perigo||'Risco biológico'});
+   list.push({exame:'Avaliação de risco biológico e atualização vacinal',esocial:'',tipos:'A / P',periodo:'Anual',motivo:r.perigo||'Risco biológico'});
   if(/ergo|postura|levan|lomb|repetitiv|sobrecarga|peso/.test(p) || g.includes('ergo'))
-   list.push({exame:'Avaliação osteomuscular',tipos:'A / P / R',periodo:'Anual',motivo:r.perigo||'Risco ergonômico'});
+   list.push({exame:'Avaliação osteomuscular',esocial:'',tipos:'A / P / R',periodo:'Anual',motivo:r.perigo||'Risco ergonômico'});
   if(/vis[aã]o|altura|elétr|motorista|porteiro|vigilante|queda/.test(p+f) || g.includes('acidente'))
-   list.push({exame:'Acuidade visual',tipos:'A / P',periodo:'Anual',motivo:r.perigo||'Função de vigilância / risco de acidente'});
+   list.push({exame:'Acuidade visual',esocial:'0105',tipos:'A / P',periodo:'Anual',motivo:r.perigo||'Função de vigilância / risco de acidente'});
   if(/psico|ass[eé]dio|estresse|mental|burnout/.test(p) || g.includes('psico'))
-   list.push({exame:'Avaliação de saúde mental relacionada ao trabalho',tipos:'A / P / R',periodo:'Anual',motivo:r.perigo||'Risco psicossocial'});
+   list.push({exame:'Avaliação de saúde mental relacionada ao trabalho',esocial:'',tipos:'A / P / R',periodo:'Anual',motivo:r.perigo||'Risco psicossocial'});
   if(/calor|t[ée]rmic/.test(p))
-   list.push({exame:'Avaliação clínica para sobrecarga térmica',tipos:'A / P',periodo:'Anual',motivo:r.perigo||'Exposição ao calor'});
+   list.push({exame:'Avaliação clínica para sobrecarga térmica',esocial:'',tipos:'A / P',periodo:'Anual',motivo:r.perigo||'Exposição ao calor'});
   return list;
  }
  function linkedRiscos(riscos,nome){
@@ -43,7 +44,7 @@ const PCMSOData=(()=>{
   const byFunc=names.map(nome=>{
    const f=funcoes.find(x=>x.nome===nome)||{nome,quantidade:'',setor:'',atividades:''};
    const linked=linkedRiscos(riscos,nome);
-   const exames=[{...BASE}];
+   const exames=[{...BASE},{...HEMO}];
    linked.forEach(r=>extras(r,nome).forEach(e=>addUnique(exames,e)));
    return {funcao:f.nome,setor:f.setor||'',qtd:f.quantidade||'',atividades:f.atividades||'',riscos:linked,exames};
   });
