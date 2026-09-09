@@ -29,9 +29,13 @@ function init(){
  $('exportDrpsCsv')?.addEventListener('click',exportDrpsCsv);
  $('importDrpsBtn')?.addEventListener('click',importDrpsPasted);
  $('drpsCondoLinks')?.addEventListener('click',onDrpsCondoLinksClick);
- const saved=V8Storage.ativo();
  seedEquipe();
- if(saved) apply(saved,true);
+ const villa=SeedVilla.run();
+ if(villa) apply(villa,true);
+ else{
+  const saved=V8Storage.ativo();
+  if(saved) apply(saved,true);
+ }
  renderAll();
 }
 function hasCadastro(){return !!(project.empresa?.razaoSocial||$('razaoSocial')?.value)}
